@@ -7,11 +7,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libs
 
 WORKDIR /app
 
-# Copy entire workspace
+# Copy workspace manifests for dependency resolution
 COPY Cargo.toml Cargo.lock ./
-COPY shared/ shared/
-COPY feeder/ feeder/
-COPY manager/ manager/
+COPY shared/Cargo.toml shared/Cargo.toml
+COPY feeder/Cargo.toml feeder/Cargo.toml
+COPY manager/Cargo.toml manager/Cargo.toml
+
+# Create stub source for workspace members we don't need to compile
+RUN mkdir -p shared/src && echo "" > shared/src/lib.rs && \
+    mkdir -p manager/src && echo "fn main() {}" > manager/src/main.rs && \
+    mkdir -p feeder/src && echo "fn main() {}" > feeder/src/main.rs
+
+# Pre-fetch dependencies (cached layer)
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    cargo fetch --locked
+
+# Copy real source code
+COPY shared/src shared/src
+COPY feeder/src feeder/src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
