@@ -1,12 +1,13 @@
-use regex::Regex;
 use reqwest::Client;
+use scraper::{Html, Selector};
 use std::sync::LazyLock;
 use std::time::{Duration, Instant};
+use url::Url;
 
 use crate::error::CrawlerError;
 
-static URL_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"https?://[\w\-.]+(?::\d+)?").unwrap());
+static ANCHOR_SELECTOR: LazyLock<Selector> =
+    LazyLock::new(|| Selector::parse("a[href]").unwrap());
 
 pub struct PageData {
     pub html: String,
@@ -50,12 +51,23 @@ pub async fn get_page_data(client: &Client, url: &str) -> Result<PageData, Crawl
     })
 }
 
-/// Extracts URLs from HTML content.
-/// Pattern: `https?://[\w\-.]+(?::\d+)?` — captures protocol + domain + optional port.
-pub fn extract_urls(html: &str) -> Vec<String> {
-    URL_REGEX
-        .find_iter(html)
-        .map(|m| m.as_str().to_string())
+/// Extracts URLs from `<a href="...">` tags in HTML content.
+/// Resolves relative URLs against the given base URL.
+/// Only returns URLs with http or https schemes.
+pub fn extract_urls(html: &str, base_url: &str) -> Vec<String> {
+    let base = match Url::parse(base_url) {
+        Ok(u) => u,
+        Err(_) => return Vec::new(),
+    };
+
+    let document = Html::parse_document(html);
+
+    document
+        .select(&ANCHOR_SELECTOR)
+        .filter_map(|el| el.value().attr("href"))
+        .filter_map(|href| base.join(href).ok())
+        .filter(|url| url.scheme() == "http" || url.scheme() == "https")
+        .map(|url| url.to_string())
         .collect()
 }
 
@@ -63,52 +75,111 @@ pub fn extract_urls(html: &str) -> Vec<String> {
 mod tests {
     use super::*;
 
+    const BASE: &str = "https://example.com/page";
+
     #[test]
     fn test_extract_urls_basic() {
-        let html = r#"<a href="https://google.com">link</a> and http://example.org too"#;
-        let urls = extract_urls(html);
-        assert_eq!(urls, vec!["https://google.com", "http://example.org"]);
+        let html = r#"<a href="https://google.com">link</a> <a href="http://example.org">other</a>"#;
+        let urls = extract_urls(html, BASE);
+        assert_eq!(
+            urls,
+            vec!["https://google.com/", "http://example.org/"]
+        );
     }
 
     #[test]
-    fn test_extract_urls_strips_paths() {
-        let html = "Visit https://example.com/path/to/page for more";
-        let urls = extract_urls(html);
-        assert_eq!(urls, vec!["https://example.com"]);
+    fn test_extract_urls_preserves_paths() {
+        let html = r#"<a href="https://example.com/path/to/page">link</a>"#;
+        let urls = extract_urls(html, BASE);
+        assert_eq!(urls, vec!["https://example.com/path/to/page"]);
     }
 
     #[test]
     fn test_extract_urls_empty() {
-        assert!(extract_urls("no urls here").is_empty());
+        assert!(extract_urls("no urls here", BASE).is_empty());
     }
 
     #[test]
-    fn test_extract_urls_multiple_same_page() {
-        let html = "https://a.com https://b.com http://c.org https://a.com";
-        let urls = extract_urls(html);
+    fn test_extract_urls_no_anchor_tags() {
+        let html = "<p>https://example.com</p>";
+        assert!(extract_urls(html, BASE).is_empty());
+    }
+
+    #[test]
+    fn test_extract_urls_multiple() {
+        let html = r#"<a href="https://a.com">A</a> <a href="https://b.com">B</a> <a href="http://c.org">C</a>"#;
+        let urls = extract_urls(html, BASE);
         assert_eq!(
             urls,
-            vec!["https://a.com", "https://b.com", "http://c.org", "https://a.com"]
+            vec!["https://a.com/", "https://b.com/", "http://c.org/"]
         );
     }
 
     #[test]
     fn test_extract_urls_with_hyphens_and_dots() {
-        let html = "https://my-site.co.uk and http://sub.example-domain.com";
-        let urls = extract_urls(html);
+        let html = r#"<a href="https://my-site.co.uk">1</a> <a href="http://sub.example-domain.com">2</a>"#;
+        let urls = extract_urls(html, BASE);
         assert_eq!(
             urls,
-            vec!["https://my-site.co.uk", "http://sub.example-domain.com"]
+            vec!["https://my-site.co.uk/", "http://sub.example-domain.com/"]
         );
     }
 
     #[test]
     fn test_extract_urls_with_ports() {
-        let html = "Visit https://example.com:8080/path and http://localhost:3000 for more";
-        let urls = extract_urls(html);
+        let html = r#"<a href="https://example.com:8080/path">1</a> <a href="http://localhost:3000">2</a>"#;
+        let urls = extract_urls(html, BASE);
         assert_eq!(
             urls,
-            vec!["https://example.com:8080", "http://localhost:3000"]
+            vec!["https://example.com:8080/path", "http://localhost:3000/"]
         );
+    }
+
+    #[test]
+    fn test_extract_urls_relative_path() {
+        let html = r#"<a href="/about">About</a>"#;
+        let urls = extract_urls(html, "https://example.com/index.html");
+        assert_eq!(urls, vec!["https://example.com/about"]);
+    }
+
+    #[test]
+    fn test_extract_urls_relative_sibling() {
+        let html = r#"<a href="contact.html">Contact</a>"#;
+        let urls = extract_urls(html, "https://example.com/pages/index.html");
+        assert_eq!(urls, vec!["https://example.com/pages/contact.html"]);
+    }
+
+    #[test]
+    fn test_extract_urls_with_query_and_fragment() {
+        let html = r#"<a href="https://example.com/search?q=rust#results">Search</a>"#;
+        let urls = extract_urls(html, BASE);
+        assert_eq!(urls, vec!["https://example.com/search?q=rust#results"]);
+    }
+
+    #[test]
+    fn test_extract_urls_skips_non_http() {
+        let html = r#"<a href="mailto:user@example.com">Email</a> <a href="ftp://files.example.com">FTP</a> <a href="https://example.com">Web</a>"#;
+        let urls = extract_urls(html, BASE);
+        assert_eq!(urls, vec!["https://example.com/"]);
+    }
+
+    #[test]
+    fn test_extract_urls_skips_javascript() {
+        let html = r#"<a href="javascript:void(0)">Click</a> <a href="https://real.com">Real</a>"#;
+        let urls = extract_urls(html, BASE);
+        assert_eq!(urls, vec!["https://real.com/"]);
+    }
+
+    #[test]
+    fn test_extract_urls_invalid_base() {
+        let html = r#"<a href="/about">About</a>"#;
+        assert!(extract_urls(html, "not-a-url").is_empty());
+    }
+
+    #[test]
+    fn test_extract_urls_protocol_relative() {
+        let html = r#"<a href="//cdn.example.com/lib.js">CDN</a>"#;
+        let urls = extract_urls(html, "https://example.com/page");
+        assert_eq!(urls, vec!["https://cdn.example.com/lib.js"]);
     }
 }

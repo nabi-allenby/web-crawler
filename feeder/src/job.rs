@@ -289,7 +289,8 @@ pub async fn feeding(
     };
 
     // Step 2: Extract URLs from HTML and normalize once
-    let extracted_urls = crawler::extract_urls(&page_data.html);
+    let full_url = format!("{}{}", job.http_type, job.name);
+    let extracted_urls = crawler::extract_urls(&page_data.html, &full_url);
     let mut normalized_map: HashMap<String, (String, String)> = HashMap::new();
     for url in &extracted_urls {
         let (norm_name, http_type) = url_normalize::normalize_url(url);
