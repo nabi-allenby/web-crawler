@@ -1,0 +1,9 @@
+# Exclude services not needed for the feeder build
+frontend/
+manager/src/
+
+# Standard exclusions
+**/target/
+**/node_modules/
+.git/
+*.md
