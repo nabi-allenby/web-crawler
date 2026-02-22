@@ -3,7 +3,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/bluedotiya/web-crawler/manager
+  repository: ghcr.io/nabi-allenby/web-crawler/manager
   tag: latest
   pullPolicy: IfNotPresent
 

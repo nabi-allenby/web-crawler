@@ -103,9 +103,9 @@ The Vite dev server proxies `/api/*` requests to the manager at `http://localhos
 ```bash
 # Build images in minikube's Docker daemon, deploy with Helm, verify pods
 eval $(minikube docker-env)
-docker build -t ghcr.io/bluedotiya/web-crawler/manager:latest -f manager/Dockerfile .
-docker build -t ghcr.io/bluedotiya/web-crawler/feeder:latest -f feeder/Dockerfile .
-docker build -t ghcr.io/bluedotiya/web-crawler/frontend:latest -f frontend/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/manager:latest -f manager/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/feeder:latest -f feeder/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/frontend:latest -f frontend/Dockerfile .
 helm upgrade --install web-crawler ./web-crawler -n web-crawler --create-namespace
 kubectl rollout status deployment manager feeder frontend -n web-crawler
 ```
@@ -168,9 +168,9 @@ PR titles **must** follow [conventional commit](https://www.conventionalcommits.
 All images are published to GitHub Container Registry:
 
 ```
-ghcr.io/bluedotiya/web-crawler/feeder:<version|latest>
-ghcr.io/bluedotiya/web-crawler/manager:<version|latest>
-ghcr.io/bluedotiya/web-crawler/frontend:<version|latest>
+ghcr.io/nabi-allenby/web-crawler/feeder:<version|latest>
+ghcr.io/nabi-allenby/web-crawler/manager:<version|latest>
+ghcr.io/nabi-allenby/web-crawler/frontend:<version|latest>
 ```
 
 ## Helm Chart OCI Publishing
@@ -179,12 +179,12 @@ The Helm chart is published as an OCI artifact — no `helm repo add` needed:
 
 ```bash
 # Install directly from GHCR
-helm install web-crawler oci://ghcr.io/bluedotiya/web-crawler/charts/web-crawler \
+helm install web-crawler oci://ghcr.io/nabi-allenby/web-crawler/charts/web-crawler \
   --version 1.0.0 -n web-crawler --create-namespace
 
 # Pull chart locally for inspection
-helm pull oci://ghcr.io/bluedotiya/web-crawler/charts/web-crawler --version 1.0.0
+helm pull oci://ghcr.io/nabi-allenby/web-crawler/charts/web-crawler --version 1.0.0
 
 # Show chart metadata
-helm show all oci://ghcr.io/bluedotiya/web-crawler/charts/web-crawler --version 1.0.0
+helm show all oci://ghcr.io/nabi-allenby/web-crawler/charts/web-crawler --version 1.0.0
 ```

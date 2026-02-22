@@ -1,4 +1,4 @@
-[![Release & Publish](https://github.com/bluedotiya/web-crawler/actions/workflows/docker-publish-master.yml/badge.svg)](https://github.com/bluedotiya/web-crawler/actions/workflows/docker-publish-master.yml)[![PR Title Check](https://github.com/bluedotiya/web-crawler/actions/workflows/pr-title.yml/badge.svg)](https://github.com/bluedotiya/web-crawler/actions/workflows/pr-title.yml)
+[![Release & Publish](https://github.com/nabi-allenby/web-crawler/actions/workflows/docker-publish-master.yml/badge.svg)](https://github.com/nabi-allenby/web-crawler/actions/workflows/docker-publish-master.yml)[![PR Title Check](https://github.com/nabi-allenby/web-crawler/actions/workflows/pr-title.yml/badge.svg)](https://github.com/nabi-allenby/web-crawler/actions/workflows/pr-title.yml)
 
 # Web Crawler
 
@@ -47,7 +47,7 @@ graph TD
 ### Install
 
 ```bash
-helm install web-crawler oci://ghcr.io/bluedotiya/web-crawler/charts/web-crawler \
+helm install web-crawler oci://ghcr.io/nabi-allenby/web-crawler/charts/web-crawler \
   --version 1.0.0 -n web-crawler --create-namespace
 ```
 
@@ -128,7 +128,7 @@ See the [Development Guide](docs/development.md) for detailed setup instructions
 
 ## Security
 
-- Report security vulnerabilities via [GitHub Security Advisories](https://github.com/bluedotiya/web-crawler/security/advisories)
+- Report security vulnerabilities via [GitHub Security Advisories](https://github.com/nabi-allenby/web-crawler/security/advisories)
 - All services run as non-root users in containers
 - Neo4j credentials are stored in Kubernetes secrets
 
