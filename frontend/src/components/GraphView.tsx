@@ -57,7 +57,7 @@ export function GraphView({ data }: GraphViewProps) {
       depth: n.depth,
       status: n.status,
       nodeType: n.node_type,
-      val: n.node_type === "ROOT" ? 4 : n.depth === 1 ? 2.5 : n.depth === 2 ? 1.5 : 1,
+      val: { ROOT: 4, 1: 2.5, 2: 1.5 }[n.node_type === "ROOT" ? "ROOT" : n.depth] ?? 1,
       // Pin root node at origin for stable centering
       ...(n.node_type === "ROOT" ? { fx: 0, fy: 0 } : {}),
     }));

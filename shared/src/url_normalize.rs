@@ -1,3 +1,5 @@
+use psl::Psl;
+
 /// Normalizes a URL by uppercasing, removing protocol and www prefix.
 ///
 /// Returns (normalized_name, protocol).
@@ -20,8 +22,6 @@ pub fn normalize_url(url: &str) -> (String, String) {
         .to_string();
     (name, proto.to_string())
 }
-
-use psl::Psl;
 
 /// Extracts the registered domain (eTLD+1) from a normalized name.
 ///
@@ -139,7 +139,6 @@ mod tests {
     fn test_registered_domain_localhost() {
         assert_eq!(registered_domain("LOCALHOST"), None);
     }
-
 
     #[test]
     fn test_is_same_registered_domain_match() {

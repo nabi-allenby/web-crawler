@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use neo4rs::{query, Graph};
 
@@ -116,21 +116,21 @@ async fn validate_job(
 
             tracing::warn!("Request failed: {} -- Attempts: {} -- Error: {}", full_url, attempts, e);
 
-            if attempts >= config.max_attempts {
-                tracing::error!(
-                    "Failure limit reached! Giving up on {} after {} attempts.",
-                    full_url,
-                    attempts
-                );
+            // 4xx errors are permanent — fail immediately without retry
+            let is_permanent = matches!(e, CrawlerError::HttpStatus { status, .. } if (400..500).contains(&status));
+
+            if is_permanent || attempts >= config.max_attempts {
+                if !is_permanent {
+                    tracing::error!(
+                        "Failure limit reached! Giving up on {} after {} attempts.",
+                        full_url,
+                        attempts
+                    );
+                }
                 update_job_status(graph, job, "FAILED", Some(attempts)).await?;
             } else {
-                // Fix: reset to PENDING so other feeders can retry
+                // Reset to PENDING so other feeders can retry
                 update_job_status(graph, job, "PENDING", Some(attempts)).await?;
-            }
-
-            // Return permanent failures (4xx) as immediate failure
-            if matches!(e, CrawlerError::HttpStatus { status, .. } if (400..500).contains(&status)) {
-                update_job_status(graph, job, "FAILED", Some(attempts)).await?;
             }
 
             Ok(None)
@@ -288,24 +288,24 @@ pub async fn feeding(
         None => return Ok(false),
     };
 
-    // Step 2: Extract URLs from HTML
+    // Step 2: Extract URLs from HTML and normalize once
     let extracted_urls = crawler::extract_urls(&page_data.html);
+    let mut normalized_map: HashMap<String, (String, String)> = HashMap::new();
+    for url in &extracted_urls {
+        let (norm_name, http_type) = url_normalize::normalize_url(url);
+        let upper_key = format!("{}{}", http_type, norm_name).to_uppercase();
+        normalized_map.entry(upper_key).or_insert((norm_name, http_type));
+    }
 
     // Step 2b: Filter by target domain when targeted
-    let filtered_urls: Vec<&String> = if job.targeted && !job.target_domain.is_empty() {
-        extracted_urls
-            .iter()
-            .filter(|u| {
-                let (norm_name, _) = url_normalize::normalize_url(u);
-                url_normalize::is_same_registered_domain(&norm_name, &job.target_domain)
-            })
-            .collect()
-    } else {
-        extracted_urls.iter().collect()
-    };
+    if job.targeted && !job.target_domain.is_empty() {
+        normalized_map.retain(|_, (norm_name, _)| {
+            url_normalize::is_same_registered_domain(norm_name, &job.target_domain)
+        });
+    }
 
     // Step 3: Deduplicate against existing DB nodes (server-side)
-    let upper_urls: HashSet<String> = filtered_urls.iter().map(|u| u.to_uppercase()).collect();
+    let upper_urls: HashSet<String> = normalized_map.keys().cloned().collect();
     let new_urls = filter_new_urls(graph, &upper_urls, &job.crawl_id).await?;
 
     if new_urls.is_empty() {
@@ -314,10 +314,10 @@ pub async fn feeding(
         return Ok(true);
     }
 
-    // Step 4: Normalize, DNS resolve in parallel, build child list
+    // Step 4: DNS resolve in parallel, build child list
     let normalized: HashSet<(String, String)> = new_urls
         .iter()
-        .map(|u| url_normalize::normalize_url(u))
+        .filter_map(|key| normalized_map.get(key).cloned())
         .collect();
 
     let request_time = format!("{:?}", page_data.elapsed);
