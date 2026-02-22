@@ -9,11 +9,12 @@ description = "Shared library for web-crawler services"
 reqwest = { workspace = true, default-features = false }
 hickory-resolver = { workspace = true }
 neo4rs = { workspace = true }
-regex = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 futures = { workspace = true }
 psl = "2"
+scraper = "0.22"
+url = "2"
 
 [dev-dependencies]
 tokio = { workspace = true }

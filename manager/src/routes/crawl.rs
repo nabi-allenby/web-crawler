@@ -72,7 +72,7 @@ pub async fn create_crawl(
     };
 
     // 3. Extract URLs from HTML
-    let extracted_urls = crawler::extract_urls(&page_data.html);
+    let extracted_urls = crawler::extract_urls(&page_data.html, &req.url);
 
     // 4. Generate unique crawl ID
     let crawl_id = Uuid::new_v4().to_string();
