@@ -13,6 +13,7 @@ export interface CrawlProgress {
   failed: number;
   root_url: string;
   requested_depth: number;
+  targeted: boolean;
 }
 
 export interface CrawlListItem {
@@ -23,6 +24,7 @@ export interface CrawlListItem {
   total: number;
   completed: number;
   failed: number;
+  targeted: boolean;
 }
 
 export interface CrawlListResponse {

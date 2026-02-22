@@ -20,13 +20,14 @@ Start a new crawl from a given URL.
 |-------|------|----------|-------------|
 | `url` | string | Yes | The URL to crawl (must be http or https) |
 | `depth` | integer | Yes | Maximum link depth to follow (1–5, where 1 = root only) |
+| `targeted` | boolean | No | When `true`, only follow links within the same registered domain (eTLD+1) as the root URL. Defaults to `false`. |
 
 **Example:**
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/crawls \
   -H 'Content-Type: application/json' \
-  -d '{"url": "https://example.com", "depth": 2}'
+  -d '{"url": "https://example.com", "depth": 2, "targeted": true}'
 ```
 
 **Response:** `201 Created`
@@ -84,7 +85,8 @@ curl "http://localhost:8080/api/v1/crawls?status=running&limit=10"
       "total": 42,
       "completed": 40,
       "failed": 2,
-      "cancelled": 0
+      "cancelled": 0,
+      "targeted": true
     }
   ],
   "total": 1,
@@ -128,7 +130,8 @@ curl http://localhost:8080/api/v1/crawls/d262a3e7-19de-437f-b0a4-cf1d689b1caf
   "failed": 60,
   "cancelled": 0,
   "root_url": "https://example.com",
-  "requested_depth": 3
+  "requested_depth": 3,
+  "targeted": false
 }
 ```
 

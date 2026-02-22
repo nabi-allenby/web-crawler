@@ -97,6 +97,11 @@ export default function CrawlList() {
                       <span className="text-gray-400 text-sm shrink-0">
                         depth {crawl.requested_depth}
                       </span>
+                      {crawl.targeted && (
+                        <span className="inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 shrink-0">
+                          Targeted
+                        </span>
+                      )}
                     </div>
                     <StatusBadge status={crawl.status} />
                   </div>

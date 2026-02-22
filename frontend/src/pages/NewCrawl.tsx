@@ -11,6 +11,7 @@ import { Input } from "../components/ui/input";
 const schema = z.object({
   url: z.string().url("Please enter a valid URL"),
   depth: z.number().min(1).max(5),
+  targeted: z.boolean(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -28,7 +29,7 @@ export default function NewCrawl() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { url: "", depth: 2 },
+    defaultValues: { url: "", depth: 2, targeted: false },
   });
 
   const depth = watch("depth");
@@ -37,7 +38,7 @@ export default function NewCrawl() {
     setSubmitting(true);
     setError("");
     try {
-      const result = await createCrawl(data.url, data.depth);
+      const result = await createCrawl(data.url, data.depth, data.targeted || undefined);
       navigate(`/crawls/${result.crawl_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start crawl");
@@ -99,6 +100,32 @@ export default function NewCrawl() {
                   {errors.depth.message}
                 </p>
               )}
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="targeted"
+                {...register("targeted")}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="targeted" className="text-sm">
+                <span className="font-medium text-gray-700">
+                  Targeted crawl
+                </span>
+                <p className="text-gray-500 mt-0.5">
+                  Only follow links within the same registered domain as the
+                  root URL. For example, crawling{" "}
+                  <code className="text-xs bg-gray-100 px-1 rounded">
+                    blog.example.com
+                  </code>{" "}
+                  will also crawl{" "}
+                  <code className="text-xs bg-gray-100 px-1 rounded">
+                    shop.example.com
+                  </code>{" "}
+                  but not external sites.
+                </p>
+              </label>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

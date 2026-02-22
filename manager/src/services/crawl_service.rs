@@ -11,6 +11,8 @@ pub struct CreateCrawlParams<'a> {
     pub depth: i64,
     pub request_time: &'a str,
     pub children: &'a [(String, String, String, String)],
+    pub targeted: bool,
+    pub target_domain: &'a str,
 }
 
 /// Create ROOT node and child URL nodes in a single transaction with crawl_id.
@@ -25,7 +27,8 @@ pub async fn create_crawl_graph(
         query(
             "CREATE (:ROOT {name: $name, ip: $ip, domain: $domain, http_type: $http_type, \
              requested_depth: $req_depth, current_depth: 0, request_time: $req_time, \
-             crawl_id: $crawl_id, created_at: datetime()})",
+             crawl_id: $crawl_id, created_at: datetime(), \
+             targeted: $targeted, target_domain: $target_domain})",
         )
         .param("name", params.root_name)
         .param("ip", params.root_ip)
@@ -33,7 +36,9 @@ pub async fn create_crawl_graph(
         .param("http_type", params.http_type)
         .param("req_depth", params.depth)
         .param("req_time", params.request_time)
-        .param("crawl_id", params.crawl_id),
+        .param("crawl_id", params.crawl_id)
+        .param("targeted", params.targeted)
+        .param("target_domain", params.target_domain),
     )
     .await?;
 
@@ -46,7 +51,8 @@ pub async fn create_crawl_graph(
                  ON CREATE SET c.ip = $ip, c.domain = $domain, \
                      c.job_status = CASE WHEN 1 = $req_depth THEN 'COMPLETED' ELSE 'PENDING' END, \
                      c.requested_depth = $req_depth, \
-                     c.current_depth = 1, c.request_time = $req_time \
+                     c.current_depth = 1, c.request_time = $req_time, \
+                     c.targeted = $targeted, c.target_domain = $target_domain \
                  MERGE (root)-[:Lead]->(c)",
             )
             .param("crawl_id", params.crawl_id)
@@ -55,7 +61,9 @@ pub async fn create_crawl_graph(
             .param("ip", child_ip.as_str())
             .param("domain", child_domain.as_str())
             .param("http_type", child_http_type.as_str())
-            .param("req_time", params.request_time),
+            .param("req_time", params.request_time)
+            .param("targeted", params.targeted)
+            .param("target_domain", params.target_domain),
         )
         .await?;
     }
@@ -83,6 +91,7 @@ pub async fn get_crawl_progress(
                    sum(CASE WHEN u.job_status = 'FAILED' THEN 1 ELSE 0 END) AS failed, \
                    sum(CASE WHEN u.job_status = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled \
                  RETURN r.name AS root_url, r.requested_depth AS depth, r.http_type AS http_type, \
+                   r.targeted AS targeted, \
                    total, completed, pending, in_progress, failed, cancelled",
             )
             .param("crawl_id", crawl_id),
@@ -113,6 +122,8 @@ pub async fn get_crawl_progress(
                         "running".to_string()
                     };
 
+                    let targeted: bool = row.get::<bool>("targeted").unwrap_or(false);
+
                     Ok(Some(CrawlProgress {
                         crawl_id: crawl_id.to_string(),
                         status,
@@ -124,6 +135,7 @@ pub async fn get_crawl_progress(
                         cancelled,
                         root_url: format!("{}{}", http_type, url),
                         requested_depth: depth,
+                        targeted,
                     }))
                 }
                 None => Ok(None),
@@ -159,6 +171,7 @@ pub async fn list_crawls(
          UNWIND items[$offset..($offset + $limit)] AS item \
          RETURN item.r.crawl_id AS crawl_id, item.r.name AS root_url, \
            item.r.http_type AS http_type, item.r.requested_depth AS depth, \
+           item.r.targeted AS targeted, \
            item.total AS total, item.completed AS completed, item.failed AS failed, item.cancelled AS cancelled, item.status AS status, \
            total_count"
     } else {
@@ -178,6 +191,7 @@ pub async fn list_crawls(
          UNWIND items[$offset..($offset + $limit)] AS item \
          RETURN item.r.crawl_id AS crawl_id, item.r.name AS root_url, \
            item.r.http_type AS http_type, item.r.requested_depth AS depth, \
+           item.r.targeted AS targeted, \
            item.total AS total, item.completed AS completed, item.failed AS failed, item.cancelled AS cancelled, item.status AS status, \
            total_count"
     };
@@ -208,6 +222,7 @@ pub async fn list_crawls(
             completed: row.get("completed")?,
             failed: row.get("failed")?,
             cancelled: row.get("cancelled")?,
+            targeted: row.get::<bool>("targeted").unwrap_or(false),
         });
     }
 

@@ -123,6 +123,8 @@ async fn main() -> anyhow::Result<()> {
             current_depth: url_job.current_depth,
             attempts: url_job.attempts,
             crawl_id: url_job.crawl_id.clone(),
+            targeted: url_job.targeted,
+            target_domain: url_job.target_domain.clone(),
         });
 
         // Check for shutdown after claiming but before processing.

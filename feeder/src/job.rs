@@ -16,6 +16,8 @@ pub struct UrlJob {
     pub current_depth: i64,
     pub attempts: Option<i64>,
     pub crawl_id: String,
+    pub targeted: bool,
+    pub target_domain: String,
 }
 
 /// Represents a child node to be created in Neo4j.
@@ -28,6 +30,8 @@ struct ChildNode {
     current_depth: i64,
     request_time: String,
     crawl_id: String,
+    targeted: bool,
+    target_domain: String,
 }
 
 /// Atomically fetches and claims a single URL job from Neo4j.
@@ -64,6 +68,8 @@ pub async fn fetch_job(graph: &Graph, stale_timeout: i64) -> Result<Option<UrlJo
                 current_depth: node.get("current_depth")?,
                 attempts: node.get::<i64>("attempts").ok(),
                 crawl_id: node.get("crawl_id").unwrap_or_default(),
+                targeted: node.get::<bool>("targeted").unwrap_or(false),
+                target_domain: node.get::<String>("target_domain").unwrap_or_default(),
             }))
         }
         None => Ok(None),
@@ -181,7 +187,8 @@ async fn batch_create_children(
                  ON CREATE SET c.ip = $ip, c.domain = $domain, \
                      c.job_status = CASE WHEN $cur_depth = $req_depth THEN 'COMPLETED' ELSE 'PENDING' END, \
                      c.requested_depth = $req_depth, \
-                     c.current_depth = $cur_depth, c.request_time = $req_time \
+                     c.current_depth = $cur_depth, c.request_time = $req_time, \
+                     c.targeted = $targeted, c.target_domain = $target_domain \
                  MERGE (p)-[:Lead]->(c)",
             )
             .param("pname", parent.name.as_str())
@@ -194,7 +201,9 @@ async fn batch_create_children(
             .param("http_type", child.http_type.as_str())
             .param("req_depth", child.requested_depth)
             .param("cur_depth", child.current_depth)
-            .param("req_time", child.request_time.as_str()),
+            .param("req_time", child.request_time.as_str())
+            .param("targeted", child.targeted)
+            .param("target_domain", child.target_domain.as_str()),
         )
         .await?;
     }
@@ -282,8 +291,21 @@ pub async fn feeding(
     // Step 2: Extract URLs from HTML
     let extracted_urls = crawler::extract_urls(&page_data.html);
 
+    // Step 2b: Filter by target domain when targeted
+    let filtered_urls: Vec<&String> = if job.targeted && !job.target_domain.is_empty() {
+        extracted_urls
+            .iter()
+            .filter(|u| {
+                let (norm_name, _) = url_normalize::normalize_url(u);
+                url_normalize::is_same_registered_domain(&norm_name, &job.target_domain)
+            })
+            .collect()
+    } else {
+        extracted_urls.iter().collect()
+    };
+
     // Step 3: Deduplicate against existing DB nodes (server-side)
-    let upper_urls: HashSet<String> = extracted_urls.iter().map(|u| u.to_uppercase()).collect();
+    let upper_urls: HashSet<String> = filtered_urls.iter().map(|u| u.to_uppercase()).collect();
     let new_urls = filter_new_urls(graph, &upper_urls, &job.crawl_id).await?;
 
     if new_urls.is_empty() {
@@ -303,6 +325,9 @@ pub async fn feeding(
     let current_depth = job.current_depth;
     let crawl_id = job.crawl_id.clone();
 
+    let targeted = job.targeted;
+    let target_domain = job.target_domain.clone();
+
     let dns_futures: Vec<_> = normalized
         .iter()
         .map(|(name, http_type)| {
@@ -310,6 +335,7 @@ pub async fn feeding(
             let http_type = http_type.clone();
             let req_time = request_time.clone();
             let cid = crawl_id.clone();
+            let td = target_domain.clone();
             async move {
                 match dns::get_network_stats(resolver, &name, config.max_dns_depth).await {
                     Ok(stats) => Some(ChildNode {
@@ -321,6 +347,8 @@ pub async fn feeding(
                         current_depth: current_depth + 1,
                         request_time: req_time,
                         crawl_id: cid,
+                        targeted,
+                        target_domain: td,
                     }),
                     Err(e) => {
                         tracing::error!("URL: {} -- FAILED: {}", name, e);
