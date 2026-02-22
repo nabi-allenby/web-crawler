@@ -3,7 +3,7 @@
 replicaCount: 8
 
 image:
-  repository: ghcr.io/bluedotiya/web-crawler/feeder
+  repository: ghcr.io/nabi-allenby/web-crawler/feeder
   tag: latest
   pullPolicy: IfNotPresent
 

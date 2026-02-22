@@ -25,7 +25,7 @@ All configuration is managed through the parent chart's `values.yaml`.
 The Helm chart is published as an OCI artifact to GitHub Container Registry. No `helm repo add` is needed.
 
 ```bash
-helm install web-crawler oci://ghcr.io/bluedotiya/web-crawler/charts/web-crawler \
+helm install web-crawler oci://ghcr.io/nabi-allenby/web-crawler/charts/web-crawler \
   --version 1.0.0 -n web-crawler --create-namespace
 ```
 
@@ -86,7 +86,7 @@ Or use the web UI at `http://<FRONTEND_URL>/new`.
 Customize via `--set` flags or a values override file:
 
 ```bash
-helm install web-crawler oci://ghcr.io/bluedotiya/web-crawler/charts/web-crawler \
+helm install web-crawler oci://ghcr.io/nabi-allenby/web-crawler/charts/web-crawler \
   --version 1.0.0 -n web-crawler --create-namespace \
   --set feeder.replicaCount=16 \
   --set neo4j.neo4j.password=SecurePassword123
@@ -124,7 +124,7 @@ helm install web-crawler ./web-crawler -n web-crawler --create-namespace \
 |-------|---------|-------------|
 | `feeder.enabled` | `true` | Deploy feeders |
 | `feeder.replicaCount` | `8` | Number of worker replicas |
-| `feeder.image.repository` | `ghcr.io/bluedotiya/web-crawler/feeder` | Docker image |
+| `feeder.image.repository` | `ghcr.io/nabi-allenby/web-crawler/feeder` | Docker image |
 | `feeder.image.tag` | `latest` | Image tag |
 | `feeder.image.pullPolicy` | `IfNotPresent` | Pull policy |
 | `feeder.resources.requests.memory` | `256Mi` | Memory request |
@@ -140,7 +140,7 @@ helm install web-crawler ./web-crawler -n web-crawler --create-namespace \
 |-------|---------|-------------|
 | `manager.enabled` | `true` | Deploy manager |
 | `manager.replicaCount` | `1` | Number of replicas |
-| `manager.image.repository` | `ghcr.io/bluedotiya/web-crawler/manager` | Docker image |
+| `manager.image.repository` | `ghcr.io/nabi-allenby/web-crawler/manager` | Docker image |
 | `manager.image.tag` | `latest` | Image tag |
 | `manager.service.type` | `ClusterIP` | Service type |
 | `manager.service.port` | `80` | Service port |
@@ -158,7 +158,7 @@ helm install web-crawler ./web-crawler -n web-crawler --create-namespace \
 |-------|---------|-------------|
 | `frontend.enabled` | `true` | Deploy frontend |
 | `frontend.replicaCount` | `1` | Number of replicas |
-| `frontend.image.repository` | `ghcr.io/bluedotiya/web-crawler/frontend` | Docker image |
+| `frontend.image.repository` | `ghcr.io/nabi-allenby/web-crawler/frontend` | Docker image |
 | `frontend.image.tag` | `latest` | Image tag |
 | `frontend.service.type` | `NodePort` | Service type |
 | `frontend.service.port` | `80` | Service port |
@@ -175,13 +175,13 @@ Each service has its own Dockerfile:
 
 ```bash
 # Manager (Rust, multi-stage build)
-docker build -t ghcr.io/bluedotiya/web-crawler/manager:latest -f manager/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/manager:latest -f manager/Dockerfile .
 
 # Feeder (Rust, multi-stage build)
-docker build -t ghcr.io/bluedotiya/web-crawler/feeder:latest -f feeder/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/feeder:latest -f feeder/Dockerfile .
 
 # Frontend (Node.js build + nginx)
-docker build -t ghcr.io/bluedotiya/web-crawler/frontend:latest -f frontend/Dockerfile frontend
+docker build -t ghcr.io/nabi-allenby/web-crawler/frontend:latest -f frontend/Dockerfile frontend
 ```
 
 ## Service Architecture in Kubernetes
@@ -227,9 +227,9 @@ minikube start
 eval $(minikube docker-env)
 
 # Build images directly in minikube
-docker build -t ghcr.io/bluedotiya/web-crawler/manager:latest -f manager/Dockerfile .
-docker build -t ghcr.io/bluedotiya/web-crawler/feeder:latest -f feeder/Dockerfile .
-docker build -t ghcr.io/bluedotiya/web-crawler/frontend:latest -f frontend/Dockerfile frontend
+docker build -t ghcr.io/nabi-allenby/web-crawler/manager:latest -f manager/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/feeder:latest -f feeder/Dockerfile .
+docker build -t ghcr.io/nabi-allenby/web-crawler/frontend:latest -f frontend/Dockerfile frontend
 
 # Install with local images
 helm dependency build web-crawler
