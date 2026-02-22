@@ -86,6 +86,7 @@ async fn update_job_status(
 ) -> Result<(), anyhow::Error> {
     let q = query(
         "MATCH (n:URL {name: $name, http_type: $http_type, current_depth: $current_depth, crawl_id: $crawl_id}) \
+         WHERE n.job_status <> 'CANCELLED' \
          SET n.job_status = $status, n.attempts = $attempts",
     )
     .param("name", job.name.as_str())
@@ -371,10 +372,18 @@ pub async fn feeding(
         return Ok(false);
     }
 
-    // Step 6: Batch-create nodes and relationships
+    // Step 6: Re-check cancellation before creating children.
+    // This closes the race window where a cancel fires after the initial
+    // is_cancelled check but before we persist new PENDING children.
+    if is_cancelled(graph, job).await? {
+        tracing::info!("Job {} cancelled during processing, skipping child creation", job.name);
+        return Ok(false);
+    }
+
+    // Step 7: Batch-create nodes and relationships
     batch_create_children(graph, job, &children).await?;
 
-    // Step 7: Mark COMPLETED
+    // Step 8: Mark COMPLETED
     update_job_status(graph, job, "COMPLETED", job.attempts).await?;
     Ok(true)
 }
