@@ -103,7 +103,13 @@ export default function CrawlDetail() {
             {crawl.root_url.toLowerCase()}
           </p>
           <p className="text-gray-400 text-sm mt-1">
-            Depth: {crawl.requested_depth} | ID: {id}
+            Depth: {crawl.requested_depth}
+            {crawl.targeted && (
+              <span className="ml-2 inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+                Targeted
+              </span>
+            )}
+            {" "}| ID: {id}
           </p>
         </div>
         <div className="flex gap-2">
@@ -226,6 +232,12 @@ export default function CrawlDetail() {
                   <div className="flex justify-between">
                     <dt className="text-gray-600">Requested Depth</dt>
                     <dd className="font-medium">{crawl.requested_depth}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-600">Scope</dt>
+                    <dd className="font-medium">
+                      {crawl.targeted ? "Targeted" : "Unrestricted"}
+                    </dd>
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-gray-600">Status</dt>

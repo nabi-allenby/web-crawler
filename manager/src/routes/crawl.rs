@@ -43,6 +43,23 @@ pub async fn create_crawl(
 
     // 1. Normalize root URL
     let (root_name, http_type) = url_normalize::normalize_url(&req.url);
+    let targeted = req.targeted.unwrap_or(false);
+
+    // 1b. Compute target domain for targeted crawls
+    let target_domain = if targeted {
+        match url_normalize::registered_domain(&root_name) {
+            Some(rd) => rd,
+            None => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": "Cannot determine registered domain for targeted crawl (bare public suffix or invalid host)"})),
+                )
+                    .into_response();
+            }
+        }
+    } else {
+        String::new()
+    };
 
     // 2. Fetch page HTML
     let page_data = match crawler::get_page_data(&state.client, &req.url).await {
@@ -85,10 +102,20 @@ pub async fn create_crawl(
     // 6. Resolve DNS for each extracted URL in parallel
     let request_time = format!("{:?}", page_data.elapsed);
 
-    let dns_futures: Vec<_> = extracted_urls
+    // 6a. Normalize extracted URLs and filter by target domain if targeted
+    let normalized_urls: Vec<(String, String)> = extracted_urls
         .iter()
-        .map(|url| {
-            let (norm_name, child_http_type) = url_normalize::normalize_url(url);
+        .map(|url| url_normalize::normalize_url(url))
+        .filter(|(norm_name, _)| {
+            !targeted || url_normalize::is_same_registered_domain(norm_name, &target_domain)
+        })
+        .collect();
+
+    let dns_futures: Vec<_> = normalized_urls
+        .iter()
+        .map(|(norm_name, child_http_type)| {
+            let norm_name = norm_name.clone();
+            let child_http_type = child_http_type.clone();
             let resolver = &state.resolver;
             let max_depth = state.config.max_dns_depth;
             async move {
@@ -117,6 +144,8 @@ pub async fn create_crawl(
         depth: req.depth,
         request_time: &request_time,
         children: &children,
+        targeted,
+        target_domain: &target_domain,
     };
     if let Err(e) = crawl_service::create_crawl_graph(&state.graph, &params).await
     {

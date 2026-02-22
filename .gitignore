@@ -15,3 +15,4 @@ tests/
 *.tgz
 frontend/node_modules/
 frontend/dist/
+.claude/

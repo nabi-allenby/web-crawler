@@ -13,6 +13,7 @@ regex = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 futures = { workspace = true }
+psl = "2"
 
 [dev-dependencies]
 tokio = { workspace = true }

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use neo4rs::{query, Graph};
 
@@ -16,6 +16,8 @@ pub struct UrlJob {
     pub current_depth: i64,
     pub attempts: Option<i64>,
     pub crawl_id: String,
+    pub targeted: bool,
+    pub target_domain: String,
 }
 
 /// Represents a child node to be created in Neo4j.
@@ -28,6 +30,8 @@ struct ChildNode {
     current_depth: i64,
     request_time: String,
     crawl_id: String,
+    targeted: bool,
+    target_domain: String,
 }
 
 /// Atomically fetches and claims a single URL job from Neo4j.
@@ -64,6 +68,8 @@ pub async fn fetch_job(graph: &Graph, stale_timeout: i64) -> Result<Option<UrlJo
                 current_depth: node.get("current_depth")?,
                 attempts: node.get::<i64>("attempts").ok(),
                 crawl_id: node.get("crawl_id").unwrap_or_default(),
+                targeted: node.get::<bool>("targeted").unwrap_or(false),
+                target_domain: node.get::<String>("target_domain").unwrap_or_default(),
             }))
         }
         None => Ok(None),
@@ -110,21 +116,21 @@ async fn validate_job(
 
             tracing::warn!("Request failed: {} -- Attempts: {} -- Error: {}", full_url, attempts, e);
 
-            if attempts >= config.max_attempts {
-                tracing::error!(
-                    "Failure limit reached! Giving up on {} after {} attempts.",
-                    full_url,
-                    attempts
-                );
+            // 4xx errors are permanent — fail immediately without retry
+            let is_permanent = matches!(e, CrawlerError::HttpStatus { status, .. } if (400..500).contains(&status));
+
+            if is_permanent || attempts >= config.max_attempts {
+                if !is_permanent {
+                    tracing::error!(
+                        "Failure limit reached! Giving up on {} after {} attempts.",
+                        full_url,
+                        attempts
+                    );
+                }
                 update_job_status(graph, job, "FAILED", Some(attempts)).await?;
             } else {
-                // Fix: reset to PENDING so other feeders can retry
+                // Reset to PENDING so other feeders can retry
                 update_job_status(graph, job, "PENDING", Some(attempts)).await?;
-            }
-
-            // Return permanent failures (4xx) as immediate failure
-            if matches!(e, CrawlerError::HttpStatus { status, .. } if (400..500).contains(&status)) {
-                update_job_status(graph, job, "FAILED", Some(attempts)).await?;
             }
 
             Ok(None)
@@ -181,7 +187,8 @@ async fn batch_create_children(
                  ON CREATE SET c.ip = $ip, c.domain = $domain, \
                      c.job_status = CASE WHEN $cur_depth = $req_depth THEN 'COMPLETED' ELSE 'PENDING' END, \
                      c.requested_depth = $req_depth, \
-                     c.current_depth = $cur_depth, c.request_time = $req_time \
+                     c.current_depth = $cur_depth, c.request_time = $req_time, \
+                     c.targeted = $targeted, c.target_domain = $target_domain \
                  MERGE (p)-[:Lead]->(c)",
             )
             .param("pname", parent.name.as_str())
@@ -194,7 +201,9 @@ async fn batch_create_children(
             .param("http_type", child.http_type.as_str())
             .param("req_depth", child.requested_depth)
             .param("cur_depth", child.current_depth)
-            .param("req_time", child.request_time.as_str()),
+            .param("req_time", child.request_time.as_str())
+            .param("targeted", child.targeted)
+            .param("target_domain", child.target_domain.as_str()),
         )
         .await?;
     }
@@ -279,11 +288,24 @@ pub async fn feeding(
         None => return Ok(false),
     };
 
-    // Step 2: Extract URLs from HTML
+    // Step 2: Extract URLs from HTML and normalize once
     let extracted_urls = crawler::extract_urls(&page_data.html);
+    let mut normalized_map: HashMap<String, (String, String)> = HashMap::new();
+    for url in &extracted_urls {
+        let (norm_name, http_type) = url_normalize::normalize_url(url);
+        let upper_key = format!("{}{}", http_type, norm_name).to_uppercase();
+        normalized_map.entry(upper_key).or_insert((norm_name, http_type));
+    }
+
+    // Step 2b: Filter by target domain when targeted
+    if job.targeted && !job.target_domain.is_empty() {
+        normalized_map.retain(|_, (norm_name, _)| {
+            url_normalize::is_same_registered_domain(norm_name, &job.target_domain)
+        });
+    }
 
     // Step 3: Deduplicate against existing DB nodes (server-side)
-    let upper_urls: HashSet<String> = extracted_urls.iter().map(|u| u.to_uppercase()).collect();
+    let upper_urls: HashSet<String> = normalized_map.keys().cloned().collect();
     let new_urls = filter_new_urls(graph, &upper_urls, &job.crawl_id).await?;
 
     if new_urls.is_empty() {
@@ -292,16 +314,19 @@ pub async fn feeding(
         return Ok(true);
     }
 
-    // Step 4: Normalize, DNS resolve in parallel, build child list
+    // Step 4: DNS resolve in parallel, build child list
     let normalized: HashSet<(String, String)> = new_urls
         .iter()
-        .map(|u| url_normalize::normalize_url(u))
+        .filter_map(|key| normalized_map.get(key).cloned())
         .collect();
 
     let request_time = format!("{:?}", page_data.elapsed);
     let requested_depth = job.requested_depth;
     let current_depth = job.current_depth;
     let crawl_id = job.crawl_id.clone();
+
+    let targeted = job.targeted;
+    let target_domain = job.target_domain.clone();
 
     let dns_futures: Vec<_> = normalized
         .iter()
@@ -310,6 +335,7 @@ pub async fn feeding(
             let http_type = http_type.clone();
             let req_time = request_time.clone();
             let cid = crawl_id.clone();
+            let td = target_domain.clone();
             async move {
                 match dns::get_network_stats(resolver, &name, config.max_dns_depth).await {
                     Ok(stats) => Some(ChildNode {
@@ -321,6 +347,8 @@ pub async fn feeding(
                         current_depth: current_depth + 1,
                         request_time: req_time,
                         crawl_id: cid,
+                        targeted,
+                        target_domain: td,
                     }),
                     Err(e) => {
                         tracing::error!("URL: {} -- FAILED: {}", name, e);

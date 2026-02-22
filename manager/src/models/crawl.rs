@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct CrawlRequest {
     pub url: String,
     pub depth: i64,
+    #[serde(default)]
+    pub targeted: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -24,6 +26,7 @@ pub struct CrawlProgress {
     pub cancelled: i64,
     pub root_url: String,
     pub requested_depth: i64,
+    pub targeted: bool,
 }
 
 #[derive(Serialize)]
@@ -36,6 +39,7 @@ pub struct CrawlListItem {
     pub completed: i64,
     pub failed: i64,
     pub cancelled: i64,
+    pub targeted: bool,
 }
 
 #[derive(Serialize)]
