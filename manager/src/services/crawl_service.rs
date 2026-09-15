@@ -112,7 +112,13 @@ pub async fn get_crawl_progress(
                     let cancelled: i64 = row.get("cancelled")?;
                     let depth: i64 = row.get("depth")?;
 
-                    let status = if pending == 0 && in_progress == 0 {
+                    // ROOT carries a different label than URL and is not counted in
+                    // `total`, so a crawl whose root yielded no resolvable links has
+                    // total == 0 with nothing pending. That used to fall through to
+                    // "completed" and report success for a crawl that did no work.
+                    let status = if total == 0 {
+                        "failed".to_string()
+                    } else if pending == 0 && in_progress == 0 {
                         if cancelled > 0 && completed == 0 {
                             "cancelled".to_string()
                         } else {
@@ -163,7 +169,8 @@ pub async fn list_crawls(
            sum(CASE WHEN u.job_status = 'FAILED' THEN 1 ELSE 0 END) AS failed, \
            sum(CASE WHEN u.job_status = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled \
          WITH r, total, completed, failed, cancelled, \
-           CASE WHEN pending = 0 AND in_progress = 0 THEN \
+           CASE WHEN total = 0 THEN 'failed' \
+           WHEN pending = 0 AND in_progress = 0 THEN \
              CASE WHEN cancelled > 0 AND completed = 0 THEN 'cancelled' ELSE 'completed' END \
            ELSE 'running' END AS status \
          WHERE status = $status \
@@ -184,7 +191,8 @@ pub async fn list_crawls(
            sum(CASE WHEN u.job_status = 'FAILED' THEN 1 ELSE 0 END) AS failed, \
            sum(CASE WHEN u.job_status = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled \
          WITH r, total, completed, failed, cancelled, \
-           CASE WHEN pending = 0 AND in_progress = 0 THEN \
+           CASE WHEN total = 0 THEN 'failed' \
+           WHEN pending = 0 AND in_progress = 0 THEN \
              CASE WHEN cancelled > 0 AND completed = 0 THEN 'cancelled' ELSE 'completed' END \
            ELSE 'running' END AS status \
          WITH count(*) AS total_count, collect({r: r, total: total, completed: completed, failed: failed, cancelled: cancelled, status: status}) AS items \
