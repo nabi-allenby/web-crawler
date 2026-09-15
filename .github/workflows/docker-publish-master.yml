@@ -37,8 +37,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
+      contents: read
     outputs:
       feeder_version: ${{ steps.feeder.outputs.version }}
       manager_version: ${{ steps.manager.outputs.version }}
@@ -177,32 +176,6 @@ jobs:
 
           echo "version=${MAJOR}.${MINOR}.${PATCH}" >> "$GITHUB_OUTPUT"
 
-      - name: Create git tags
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if [ -n "${{ steps.feeder.outputs.version }}" ]; then
-            git tag "feeder/v${{ steps.feeder.outputs.version }}"
-            echo "Tagged feeder/v${{ steps.feeder.outputs.version }}"
-          fi
-
-          if [ -n "${{ steps.manager.outputs.version }}" ]; then
-            git tag "manager/v${{ steps.manager.outputs.version }}"
-            echo "Tagged manager/v${{ steps.manager.outputs.version }}"
-          fi
-
-          if [ -n "${{ steps.frontend.outputs.version }}" ]; then
-            git tag "frontend/v${{ steps.frontend.outputs.version }}"
-            echo "Tagged frontend/v${{ steps.frontend.outputs.version }}"
-          fi
-
-          if [ -n "${{ steps.chart.outputs.version }}" ]; then
-            git tag "chart/v${{ steps.chart.outputs.version }}"
-            echo "Tagged chart/v${{ steps.chart.outputs.version }}"
-          fi
-
-          git push --tags
 
   build-feeder:
     needs: release
@@ -313,3 +286,65 @@ jobs:
 
       - name: Push Helm chart to GHCR
         run: helm push web-crawler-${{ needs.release.outputs.chart_version }}.tgz oci://${{ env.IMAGE_PREFIX }}/charts
+
+  # Tags are created only after the corresponding artifact is actually
+  # published. Tagging in the release job meant a failed build still moved the
+  # tag forward; the next run then found no new commits for that service, set
+  # an empty version, and skipped the build permanently. That is how
+  # frontend/v1.1.0 came to exist with no frontend image behind it.
+  tag:
+    needs: [release, build-feeder, build-manager, build-frontend, publish-chart]
+    if: always() && needs.release.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create git tags for published artifacts
+        env:
+          FEEDER_VERSION: ${{ needs.release.outputs.feeder_version }}
+          MANAGER_VERSION: ${{ needs.release.outputs.manager_version }}
+          FRONTEND_VERSION: ${{ needs.release.outputs.frontend_version }}
+          CHART_VERSION: ${{ needs.release.outputs.chart_version }}
+          FEEDER_RESULT: ${{ needs.build-feeder.result }}
+          MANAGER_RESULT: ${{ needs.build-manager.result }}
+          FRONTEND_RESULT: ${{ needs.build-frontend.result }}
+          CHART_RESULT: ${{ needs.publish-chart.result }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          tagged=0
+          tag_if_published() {
+            PREFIX="$1"; VERSION="$2"; RESULT="$3"
+
+            # No version means there was nothing to release for this service.
+            if [ -z "$VERSION" ]; then
+              echo "Skipping ${PREFIX}: no new version"
+              return 0
+            fi
+
+            if [ "$RESULT" != "success" ]; then
+              echo "NOT tagging ${PREFIX}${VERSION}: publish job result was '${RESULT}'"
+              return 0
+            fi
+
+            git tag "${PREFIX}${VERSION}"
+            echo "Tagged ${PREFIX}${VERSION}"
+            tagged=1
+          }
+
+          tag_if_published "feeder/v"   "$FEEDER_VERSION"   "$FEEDER_RESULT"
+          tag_if_published "manager/v"  "$MANAGER_VERSION"  "$MANAGER_RESULT"
+          tag_if_published "frontend/v" "$FRONTEND_VERSION" "$FRONTEND_RESULT"
+          tag_if_published "chart/v"    "$CHART_VERSION"    "$CHART_RESULT"
+
+          if [ "$tagged" -eq 1 ]; then
+            git push --tags
+          else
+            echo "No tags to push"
+          fi
