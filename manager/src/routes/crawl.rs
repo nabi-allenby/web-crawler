@@ -134,6 +134,28 @@ pub async fn create_crawl(
             .flatten()
             .collect();
 
+    // DNS failures above collapse to None and vanish. Report them: a crawl that
+    // creates no children is indistinguishable in the graph from one that simply
+    // had nothing to crawl, so the logs are the only place the cause is visible.
+    let candidates = normalized_urls.len();
+    let dropped = candidates - children.len();
+    if dropped > 0 {
+        tracing::warn!(
+            "Crawl {}: dropped {}/{} candidate links (DNS resolution failed)",
+            crawl_id,
+            dropped,
+            candidates
+        );
+    }
+    if children.is_empty() {
+        tracing::warn!(
+            "Crawl {}: no child URLs created from {} extracted links ({} passed the domain filter); crawl will report as failed",
+            crawl_id,
+            extracted_urls.len(),
+            candidates
+        );
+    }
+
     // 7. Create ROOT + children in Neo4j with crawl_id
     let params = crawl_service::CreateCrawlParams {
         crawl_id: &crawl_id,
