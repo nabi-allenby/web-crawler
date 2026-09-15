@@ -5,7 +5,10 @@ replicaCount: 1
 image:
   repository: ghcr.io/nabi-allenby/web-crawler/frontend
   tag: latest
-  pullPolicy: IfNotPresent
+  # Left empty so the policy is derived from the tag: a mutable tag (latest)
+  # resolves to Always, anything pinned to IfNotPresent. Set explicitly to
+  # override (local-values.yaml uses "Never" for locally built images).
+  pullPolicy: ""
 
 # Resource limits and requests
 resources:

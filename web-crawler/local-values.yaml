@@ -8,3 +8,7 @@ feeder:
 manager:
   image:
     pullPolicy: Never
+
+frontend:
+  image:
+    pullPolicy: Never
