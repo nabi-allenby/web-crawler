@@ -16,3 +16,8 @@ tests/
 frontend/node_modules/
 frontend/dist/
 .claude/
+
+# local secrets
+.env
+.env.*
+!.env.example
