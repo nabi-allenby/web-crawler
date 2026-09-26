@@ -14,6 +14,8 @@ export interface CrawlProgress {
   root_url: string;
   requested_depth: number;
   targeted: boolean;
+  /** Node budget for the crawl; 0 for crawls created before the cap existed. */
+  max_pages: number;
 }
 
 export interface CrawlListItem {
@@ -25,6 +27,7 @@ export interface CrawlListItem {
   completed: number;
   failed: number;
   targeted: boolean;
+  max_pages: number;
 }
 
 export interface CrawlListResponse {

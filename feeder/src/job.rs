@@ -6,7 +6,7 @@ use crate::config::Config;
 use shared::crawler::{self, PageData};
 use shared::dns;
 use shared::error::CrawlerError;
-use shared::url_normalize;
+use shared::url_normalize::{self, NormalizedUrl};
 
 /// Represents a URL job fetched from Neo4j.
 pub struct UrlJob {
@@ -18,11 +18,14 @@ pub struct UrlJob {
     pub crawl_id: String,
     pub targeted: bool,
     pub target_domain: String,
+    /// Node budget for the crawl; 0 means unlimited (crawls created before the cap).
+    pub max_pages: i64,
 }
 
 /// Represents a child node to be created in Neo4j.
 struct ChildNode {
     name: String,
+    host: String,
     ip: String,
     domain: String,
     http_type: String,
@@ -32,6 +35,7 @@ struct ChildNode {
     crawl_id: String,
     targeted: bool,
     target_domain: String,
+    max_pages: i64,
 }
 
 /// Atomically fetches and claims a single URL job from Neo4j.
@@ -70,6 +74,7 @@ pub async fn fetch_job(graph: &Graph, stale_timeout: i64) -> Result<Option<UrlJo
                 crawl_id: node.get("crawl_id").unwrap_or_default(),
                 targeted: node.get::<bool>("targeted").unwrap_or(false),
                 target_domain: node.get::<String>("target_domain").unwrap_or_default(),
+                max_pages: node.get::<i64>("max_pages").unwrap_or(0),
             }))
         }
         None => Ok(None),
@@ -99,17 +104,32 @@ async fn update_job_status(
     Ok(())
 }
 
+/// Result of fetching a job's URL.
+enum FetchOutcome {
+    /// HTML page with links to follow.
+    Page(PageData),
+    /// Fetched fine but not HTML (PDF, image, ...). A leaf: no children, no retry.
+    Leaf,
+    /// Fetch failed; status has already been updated to PENDING or FAILED.
+    Failed,
+}
+
 /// Attempts to fetch a URL's HTML content. Implements retry logic with proper error matching.
 async fn validate_job(
     graph: &Graph,
     client: &reqwest::Client,
     config: &Config,
     job: &mut UrlJob,
-) -> Result<Option<PageData>, anyhow::Error> {
+) -> Result<FetchOutcome, anyhow::Error> {
     let full_url = format!("{}{}", job.http_type, job.name);
 
     match crawler::get_page_data(client, &full_url).await {
-        Ok(page_data) => Ok(Some(page_data)),
+        Ok(page_data) => Ok(FetchOutcome::Page(page_data)),
+        Err(CrawlerError::NotHtml { content_type, .. }) => {
+            tracing::info!("Not HTML ({}), treating as leaf: {}", content_type, full_url);
+            update_job_status(graph, job, "COMPLETED", job.attempts).await?;
+            Ok(FetchOutcome::Leaf)
+        }
         Err(e) => {
             let attempts = job.attempts.unwrap_or(0) + 1;
             job.attempts = Some(attempts);
@@ -133,7 +153,7 @@ async fn validate_job(
                 update_job_status(graph, job, "PENDING", Some(attempts)).await?;
             }
 
-            Ok(None)
+            Ok(FetchOutcome::Failed)
         }
     }
 }
@@ -172,6 +192,11 @@ async fn filter_new_urls(
 
 /// Creates child URL nodes and Lead relationships in a single transaction.
 /// Uses MERGE to prevent duplicates when concurrent jobs discover the same URLs.
+///
+/// Enforces the crawl's page budget: only as many children are inserted as fit
+/// under `max_pages`. The count is read in the same transaction, but feeders run
+/// in parallel, so the cap is approximate (overshoot bounded by
+/// feeders × links-per-page); good enough to keep a crawl from running away.
 async fn batch_create_children(
     graph: &Graph,
     parent: &UrlJob,
@@ -179,23 +204,54 @@ async fn batch_create_children(
 ) -> Result<(), anyhow::Error> {
     let mut txn = graph.start_txn().await?;
 
+    let children = if parent.max_pages > 0 {
+        let mut count_result = txn
+            .execute(
+                query("MATCH (u:URL {crawl_id: $crawl_id}) RETURN count(u) AS c")
+                    .param("crawl_id", parent.crawl_id.as_str()),
+            )
+            .await?;
+        let existing: i64 = match count_result.next(txn.handle()).await? {
+            Some(row) => row.get("c")?,
+            None => 0,
+        };
+        let remaining = usize::try_from(parent.max_pages - existing).unwrap_or(0);
+        if remaining < children.len() {
+            tracing::warn!(
+                "Crawl {} at page budget ({}/{}); dropping {} of {} links from {}",
+                parent.crawl_id,
+                existing,
+                parent.max_pages,
+                children.len() - remaining,
+                children.len(),
+                parent.name
+            );
+        }
+        &children[..remaining.min(children.len())]
+    } else {
+        children
+    };
+
     for child in children {
         txn.run(
             query(
                 "MATCH (p:URL {name: $pname, http_type: $phttp, current_depth: $pdepth, crawl_id: $crawl_id}) \
                  MERGE (c:URL {name: $name, http_type: $http_type, crawl_id: $crawl_id}) \
-                 ON CREATE SET c.ip = $ip, c.domain = $domain, \
+                 ON CREATE SET c.host = $host, c.ip = $ip, c.domain = $domain, \
                      c.job_status = CASE WHEN $cur_depth = $req_depth THEN 'COMPLETED' ELSE 'PENDING' END, \
                      c.requested_depth = $req_depth, \
                      c.current_depth = $cur_depth, c.request_time = $req_time, \
-                     c.targeted = $targeted, c.target_domain = $target_domain \
+                     c.targeted = $targeted, c.target_domain = $target_domain, \
+                     c.max_pages = $max_pages \
                  MERGE (p)-[:Lead]->(c)",
             )
+            .param("max_pages", child.max_pages)
             .param("pname", parent.name.as_str())
             .param("phttp", parent.http_type.as_str())
             .param("pdepth", parent.current_depth)
             .param("crawl_id", child.crawl_id.as_str())
             .param("name", child.name.as_str())
+            .param("host", child.host.as_str())
             .param("ip", child.ip.as_str())
             .param("domain", child.domain.as_str())
             .param("http_type", child.http_type.as_str())
@@ -284,30 +340,31 @@ pub async fn feeding(
 
     // Step 1: Validate (fetch HTML) — job is already IN-PROGRESS from fetch_job()
     let page_data = match validate_job(graph, client, config, job).await? {
-        Some(pd) => pd,
-        None => return Ok(false),
+        FetchOutcome::Page(pd) => pd,
+        FetchOutcome::Leaf => return Ok(true),
+        FetchOutcome::Failed => return Ok(false),
     };
 
-    // Step 2: Extract URLs from HTML and normalize once
+    // Step 2: Extract URLs from HTML and normalize once. Keyed by the exact
+    // `http_type + name` so two hrefs to the same page collapse before dedup.
     let full_url = format!("{}{}", job.http_type, job.name);
     let extracted_urls = crawler::extract_urls(&page_data.html, &full_url);
-    let mut normalized_map: HashMap<String, (String, String)> = HashMap::new();
+    let mut normalized_map: HashMap<String, NormalizedUrl> = HashMap::new();
     for url in &extracted_urls {
-        let (norm_name, http_type) = url_normalize::normalize_url(url);
-        let upper_key = format!("{}{}", http_type, norm_name).to_uppercase();
-        normalized_map.entry(upper_key).or_insert((norm_name, http_type));
+        let n = url_normalize::normalize_url(url);
+        let key = format!("{}{}", n.http_type, n.name);
+        normalized_map.entry(key).or_insert(n);
     }
 
     // Step 2b: Filter by target domain when targeted
     if job.targeted && !job.target_domain.is_empty() {
-        normalized_map.retain(|_, (norm_name, _)| {
-            url_normalize::is_same_registered_domain(norm_name, &job.target_domain)
-        });
+        normalized_map
+            .retain(|_, n| url_normalize::is_same_registered_domain(&n.host, &job.target_domain));
     }
 
     // Step 3: Deduplicate against existing DB nodes (server-side)
-    let upper_urls: HashSet<String> = normalized_map.keys().cloned().collect();
-    let new_urls = filter_new_urls(graph, &upper_urls, &job.crawl_id).await?;
+    let candidate_keys: HashSet<String> = normalized_map.keys().cloned().collect();
+    let new_urls = filter_new_urls(graph, &candidate_keys, &job.crawl_id).await?;
 
     if new_urls.is_empty() {
         tracing::warn!("No new URLs found in: {}", job.name);
@@ -315,55 +372,40 @@ pub async fn feeding(
         return Ok(true);
     }
 
-    // Step 4: DNS resolve in parallel, build child list
-    let normalized: HashSet<(String, String)> = new_urls
+    // Step 4: Resolve each distinct host once, then fan the result out to every
+    // page on that host.
+    let new_pages: Vec<&NormalizedUrl> = new_urls
         .iter()
-        .filter_map(|key| normalized_map.get(key).cloned())
+        .filter_map(|key| normalized_map.get(key))
         .collect();
+
+    let resolved = dns::resolve_hosts(
+        resolver,
+        new_pages.iter().map(|n| n.host.as_str()),
+        config.max_dns_depth,
+    )
+    .await;
 
     let request_time = format!("{:?}", page_data.elapsed);
-    let requested_depth = job.requested_depth;
-    let current_depth = job.current_depth;
-    let crawl_id = job.crawl_id.clone();
-
-    let targeted = job.targeted;
-    let target_domain = job.target_domain.clone();
-
-    let dns_futures: Vec<_> = normalized
-        .iter()
-        .map(|(name, http_type)| {
-            let name = name.clone();
-            let http_type = http_type.clone();
-            let req_time = request_time.clone();
-            let cid = crawl_id.clone();
-            let td = target_domain.clone();
-            async move {
-                match dns::get_network_stats(resolver, &name, config.max_dns_depth).await {
-                    Ok(stats) => Some(ChildNode {
-                        name,
-                        ip: stats.ip,
-                        domain: stats.domain,
-                        http_type,
-                        requested_depth,
-                        current_depth: current_depth + 1,
-                        request_time: req_time,
-                        crawl_id: cid,
-                        targeted,
-                        target_domain: td,
-                    }),
-                    Err(e) => {
-                        tracing::error!("URL: {} -- FAILED: {}", name, e);
-                        None
-                    }
-                }
-            }
-        })
-        .collect();
-
-    let children: Vec<ChildNode> = futures::future::join_all(dns_futures)
-        .await
+    let children: Vec<ChildNode> = new_pages
         .into_iter()
-        .flatten()
+        .filter_map(|n| {
+            let stats = resolved.get(&n.host)?;
+            Some(ChildNode {
+                name: n.name.clone(),
+                host: n.host.clone(),
+                ip: stats.ip.clone(),
+                domain: stats.domain.clone(),
+                http_type: n.http_type.clone(),
+                requested_depth: job.requested_depth,
+                current_depth: job.current_depth + 1,
+                request_time: request_time.clone(),
+                crawl_id: job.crawl_id.clone(),
+                targeted: job.targeted,
+                target_domain: job.target_domain.clone(),
+                max_pages: job.max_pages,
+            })
+        })
         .collect();
 
     if children.is_empty() {

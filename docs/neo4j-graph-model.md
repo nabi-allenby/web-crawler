@@ -13,12 +13,14 @@ Represents the entry point of a crawl. One ROOT node is created per crawl submis
 | Property | Type | Description |
 |----------|------|-------------|
 | `crawl_id` | String | Unique crawl identifier (UUID) |
-| `name` | String | Normalized URL without protocol (e.g. `EXAMPLE.COM/PATH`) |
+| `name` | String | Page identity without protocol: lowercase host + case-preserved path + sorted query (e.g. `example.com/docs/Intro?page=2`). `http_type + name` is a fetchable URL |
+| `host` | String | Uppercased host with `www.` stripped and non-default port kept (e.g. `EXAMPLE.COM:8080`). Used for DNS and the targeted-crawl filter |
 | `http_type` | String | Protocol prefix (`HTTPS://` or `HTTP://`) |
 | `ip` | String | Resolved IP address |
 | `domain` | String | Top-level domain extracted via DNS |
 | `requested_depth` | Integer | Maximum crawl depth requested by the user |
 | `current_depth` | Integer | Always `0` for ROOT nodes |
+| `max_pages` | Integer | Node budget for the crawl; feeders stop creating children once reached |
 | `request_time` | String | HTTP request duration (e.g. `"1.234s"`) |
 | `created_at` | DateTime | Timestamp when the crawl was created |
 
@@ -29,13 +31,15 @@ Represents a discovered page. Created during crawl initiation (depth 1) and by f
 | Property | Type | Description |
 |----------|------|-------------|
 | `crawl_id` | String | References the parent crawl's UUID |
-| `name` | String | Normalized URL without protocol |
+| `name` | String | Page identity without protocol (same rules as ROOT) |
+| `host` | String | Uppercased host (same rules as ROOT) |
 | `http_type` | String | Protocol prefix (`HTTPS://` or `HTTP://`) |
 | `ip` | String | Resolved IP address |
 | `domain` | String | Top-level domain extracted via DNS |
 | `job_status` | String | Processing state (see [Status Lifecycle](#status-lifecycle)) |
 | `requested_depth` | Integer | Maximum crawl depth (inherited from ROOT) |
 | `current_depth` | Integer | Depth at which this URL was discovered (1, 2, 3, ...) |
+| `max_pages` | Integer | Node budget (inherited from ROOT) |
 | `request_time` | String | HTTP request duration of the parent page |
 | `attempts` | Integer | Number of fetch attempts (incremented on failure) |
 | `claimed_at` | DateTime | Timestamp when a feeder claimed this job |
@@ -57,7 +61,7 @@ No properties on the relationship.
 
 ```mermaid
 graph TD
-    ROOT["ROOT<br/>crawl_id='abc'<br/>name='EXAMPLE.COM'<br/>depth=0"]
+    ROOT["ROOT<br/>crawl_id='abc'<br/>name='example.com'<br/>depth=0"]
     URL1["URL<br/>depth=1"]
     URL2["URL<br/>depth=1"]
     URL3["URL<br/>depth=1"]

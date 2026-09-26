@@ -8,7 +8,7 @@ A distributed, recursive web crawler built in Rust. Feed it a URL and it maps al
 
 ## Features
 
-- **Recursive crawling** — follow links up to a configurable depth
+- **Page-level crawling** — every page is a node; follow links up to a configurable depth within a per-crawl page budget
 - **Distributed workers** — 8 feeder replicas process URLs in parallel
 - **Graph storage** — Neo4j stores URL nodes and link relationships
 - **Real-time progress** — WebSocket updates stream crawl status live
@@ -75,7 +75,7 @@ Use the web UI at `/new`, or via the API:
 ```bash
 curl -X POST http://<NODE_IP>:30080/api/v1/crawls \
   -H 'Content-Type: application/json' \
-  -d '{"url": "https://example.com", "depth": 2}'
+  -d '{"url": "https://example.com", "depth": 2, "targeted": true, "max_pages": 1000}'
 ```
 
 ## Screenshots

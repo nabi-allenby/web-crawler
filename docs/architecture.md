@@ -129,12 +129,12 @@ flowchart LR
     F --> G[6. Store in Neo4j]
 ```
 
-1. **Normalize** — Strip fragments, uppercase hostname, remove trailing slashes, split into `(name, http_type)` e.g. `("EXAMPLE.COM/PATH", "HTTPS://")`
-2. **Fetch HTML** — GET request with timeout and user-agent header; records elapsed time as `request_time`
-3. **Extract URLs** — Regex extraction of `href` values from `<a>` tags, filtered to http/https only
+1. **Normalize** — Split into a page identity and a host. `name` is lowercase host + case-preserved path + sorted query, with fragments, trailing slashes and tracking parameters (`utm_*`, `fbclid`, …) removed, so `/docs/` and `/docs?utm_source=x` are one node while `/About` and `/about` are two. `host` is the uppercased hostname used for DNS and the targeted filter. e.g. `https://www.Example.com/Docs/?b=2&a=1#top` → `name = "example.com/Docs?a=1&b=2"`, `host = "EXAMPLE.COM"`, `http_type = "HTTPS://"`
+2. **Fetch HTML** — GET request with timeout and user-agent header; records elapsed time as `request_time`. A non-HTML `Content-Type` (PDF, image, …) marks the node `COMPLETED` as a leaf without extracting links
+3. **Extract URLs** — Parse `href` values from `<a>` tags; keep http/https only; skip paths ending in a non-page extension (`.pdf`, `.png`, `.js`, …); cap at `MAX_LINKS_PER_PAGE` (500) per page
 4. **Deduplicate** — (Feeder only) Server-side Cypher query filters out URLs already in the database
-5. **DNS Resolve** — Resolve hostname to IP address and domain; follows CNAME chains up to `max_dns_depth`; parallel resolution for all child URLs
-6. **Store in Neo4j** — Create URL nodes with properties + Lead relationships; uses `MERGE` to prevent duplicates from concurrent feeders
+5. **DNS Resolve** — Resolve each *distinct host* once to IP address and domain (a page can link to hundreds of pages on one host); follows CNAME chains up to `max_dns_depth`
+6. **Store in Neo4j** — Create URL nodes with properties + Lead relationships; uses `MERGE` to prevent duplicates from concurrent feeders. Children beyond the crawl's `max_pages` budget are dropped
 
 ## Concurrency Model
 
@@ -143,6 +143,7 @@ flowchart LR
 - **Stale job reclamation**: if no PENDING jobs exist, feeders look for IN-PROGRESS jobs where `claimed_at` exceeds the configurable stale timeout (default: 10 minutes) and reclaim them — this handles feeder crashes without requiring a separate reaper process
 - **Exponential backoff**: when no work is found, the poll interval doubles from `poll_min_ms` (default: 100ms) up to `poll_max_ms` (default: 30s), then resets immediately when work is found
 - **Duplicate prevention**: child URL creation uses `MERGE` (not `CREATE`) so concurrent feeders discovering the same URL only create one node
+- **Page budget**: every crawl carries `max_pages` (default 1000, max 10000). Before inserting children a feeder counts the crawl's URL nodes in the same transaction and inserts only what fits. Feeders don't coordinate, so the cap can overshoot by up to feeders × links-per-page; pending jobs already created keep being fetched but add no children
 
 ## Graceful Shutdown
 

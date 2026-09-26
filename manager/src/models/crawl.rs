@@ -6,6 +6,9 @@ pub struct CrawlRequest {
     pub depth: i64,
     #[serde(default)]
     pub targeted: Option<bool>,
+    /// Upper bound on URL nodes for this crawl. Defaults to `DEFAULT_MAX_PAGES`.
+    #[serde(default)]
+    pub max_pages: Option<i64>,
 }
 
 #[derive(Serialize)]
@@ -27,6 +30,7 @@ pub struct CrawlProgress {
     pub root_url: String,
     pub requested_depth: i64,
     pub targeted: bool,
+    pub max_pages: i64,
 }
 
 #[derive(Serialize)]
@@ -40,6 +44,7 @@ pub struct CrawlListItem {
     pub failed: i64,
     pub cancelled: i64,
     pub targeted: bool,
+    pub max_pages: i64,
 }
 
 #[derive(Serialize)]

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -5,9 +6,10 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::models::crawl::{CrawlRequest, CrawlResponse};
-use crate::services::crawl_service;
+use crate::services::crawl_service::{self, ChildUrl};
 use crate::state::AppState;
 use shared::error::CrawlerError;
+use shared::url_normalize::NormalizedUrl;
 use shared::{crawler, dns, url_normalize};
 
 /// Map CrawlerError to appropriate HTTP status code.
@@ -18,6 +20,8 @@ fn crawler_error_to_status(err: &CrawlerError) -> StatusCode {
         CrawlerError::HttpStatus { .. }
         | CrawlerError::HttpRequest { .. }
         | CrawlerError::HttpBodyRead { .. } => StatusCode::BAD_GATEWAY,
+        // The root URL must be a page; there is nothing to crawl from a PDF.
+        CrawlerError::NotHtml { .. } => StatusCode::UNPROCESSABLE_ENTITY,
         CrawlerError::DnsResolution { .. } => StatusCode::BAD_GATEWAY,
         CrawlerError::Neo4jConnection(_) | CrawlerError::Neo4jQuery(_) => {
             StatusCode::INTERNAL_SERVER_ERROR
@@ -26,6 +30,10 @@ fn crawler_error_to_status(err: &CrawlerError) -> StatusCode {
 }
 
 const MAX_CRAWL_DEPTH: i64 = 5;
+/// Page-level crawling can discover thousands of nodes per level, so every crawl
+/// carries a node budget. These bound what a request may ask for.
+const DEFAULT_MAX_PAGES: i64 = 1_000;
+const MAX_MAX_PAGES: i64 = 10_000;
 
 /// POST /api/v1/crawls — Submit a new crawl.
 pub async fn create_crawl(
@@ -41,13 +49,23 @@ pub async fn create_crawl(
             .into_response();
     }
 
+    // 0b. Validate page budget
+    let max_pages = req.max_pages.unwrap_or(DEFAULT_MAX_PAGES);
+    if !(1..=MAX_MAX_PAGES).contains(&max_pages) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": format!("max_pages must be between 1 and {}", MAX_MAX_PAGES)})),
+        )
+            .into_response();
+    }
+
     // 1. Normalize root URL
-    let (root_name, http_type) = url_normalize::normalize_url(&req.url);
+    let root = url_normalize::normalize_url(&req.url);
     let targeted = req.targeted.unwrap_or(false);
 
     // 1b. Compute target domain for targeted crawls
     let target_domain = if targeted {
-        match url_normalize::registered_domain(&root_name) {
+        match url_normalize::registered_domain(&root.host) {
             Some(rd) => rd,
             None => {
                 return (
@@ -80,13 +98,13 @@ pub async fn create_crawl(
     tracing::info!(
         "Starting crawl {} for {} at depth {}",
         crawl_id,
-        root_name,
+        root.name,
         req.depth
     );
 
-    // 5. DNS resolve root URL
+    // 5. DNS resolve root host
     let root_stats =
-        match dns::get_network_stats(&state.resolver, &root_name, state.config.max_dns_depth).await
+        match dns::get_network_stats(&state.resolver, &root.host, state.config.max_dns_depth).await
         {
             Ok(stats) => stats,
             Err(e) => {
@@ -99,45 +117,46 @@ pub async fn create_crawl(
             }
         };
 
-    // 6. Resolve DNS for each extracted URL in parallel
     let request_time = format!("{:?}", page_data.elapsed);
 
-    // 6a. Normalize extracted URLs and filter by target domain if targeted
-    let normalized_urls: Vec<(String, String)> = extracted_urls
-        .iter()
-        .map(|url| url_normalize::normalize_url(url))
-        .filter(|(norm_name, _)| {
-            !targeted || url_normalize::is_same_registered_domain(norm_name, &target_domain)
+    // 6a. Normalize extracted URLs, collapse duplicates, filter by target domain
+    let mut candidate_pages: HashMap<String, NormalizedUrl> = HashMap::new();
+    for url in &extracted_urls {
+        let n = url_normalize::normalize_url(url);
+        if targeted && !url_normalize::is_same_registered_domain(&n.host, &target_domain) {
+            continue;
+        }
+        candidate_pages
+            .entry(format!("{}{}", n.http_type, n.name))
+            .or_insert(n);
+    }
+
+    // 6b. Resolve each distinct host once and fan out to its pages
+    let resolved = dns::resolve_hosts(
+        &state.resolver,
+        candidate_pages.values().map(|n| n.host.as_str()),
+        state.config.max_dns_depth,
+    )
+    .await;
+
+    let children: Vec<ChildUrl> = candidate_pages
+        .values()
+        .filter_map(|n| {
+            let stats = resolved.get(&n.host)?;
+            Some(ChildUrl {
+                name: n.name.clone(),
+                host: n.host.clone(),
+                ip: stats.ip.clone(),
+                domain: stats.domain.clone(),
+                http_type: n.http_type.clone(),
+            })
         })
         .collect();
-
-    let dns_futures: Vec<_> = normalized_urls
-        .iter()
-        .map(|(norm_name, child_http_type)| {
-            let norm_name = norm_name.clone();
-            let child_http_type = child_http_type.clone();
-            let resolver = &state.resolver;
-            let max_depth = state.config.max_dns_depth;
-            async move {
-                match dns::get_network_stats(resolver, &norm_name, max_depth).await {
-                    Ok(stats) => Some((norm_name, stats.ip, stats.domain, child_http_type)),
-                    Err(_) => None,
-                }
-            }
-        })
-        .collect();
-
-    let children: Vec<(String, String, String, String)> =
-        futures::future::join_all(dns_futures)
-            .await
-            .into_iter()
-            .flatten()
-            .collect();
 
     // DNS failures above collapse to None and vanish. Report them: a crawl that
     // creates no children is indistinguishable in the graph from one that simply
     // had nothing to crawl, so the logs are the only place the cause is visible.
-    let candidates = normalized_urls.len();
+    let candidates = candidate_pages.len();
     let dropped = candidates - children.len();
     if dropped > 0 {
         tracing::warn!(
@@ -159,15 +178,17 @@ pub async fn create_crawl(
     // 7. Create ROOT + children in Neo4j with crawl_id
     let params = crawl_service::CreateCrawlParams {
         crawl_id: &crawl_id,
-        root_name: &root_name,
+        root_name: &root.name,
+        root_host: &root.host,
         root_ip: &root_stats.ip,
         root_domain: &root_stats.domain,
-        http_type: &http_type,
+        http_type: &root.http_type,
         depth: req.depth,
         request_time: &request_time,
         children: &children,
         targeted,
         target_domain: &target_domain,
+        max_pages,
     };
     if let Err(e) = crawl_service::create_crawl_graph(&state.graph, &params).await
     {

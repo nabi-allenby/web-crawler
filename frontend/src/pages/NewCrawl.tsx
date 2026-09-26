@@ -8,10 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
+const MAX_PAGES_LIMIT = 10000;
+
 const schema = z.object({
   url: z.string().url("Please enter a valid URL"),
   depth: z.number().min(1).max(5),
   targeted: z.boolean(),
+  maxPages: z
+    .number({ invalid_type_error: "Enter a number" })
+    .int()
+    .min(1, "At least 1 page")
+    .max(MAX_PAGES_LIMIT, `At most ${MAX_PAGES_LIMIT} pages`),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -29,7 +36,8 @@ export default function NewCrawl() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { url: "", depth: 2, targeted: false },
+    // Page-level crawling makes open crawls explode; stay on-domain by default.
+    defaultValues: { url: "", depth: 2, targeted: true, maxPages: 1000 },
   });
 
   const depth = watch("depth");
@@ -38,7 +46,12 @@ export default function NewCrawl() {
     setSubmitting(true);
     setError("");
     try {
-      const result = await createCrawl(data.url, data.depth, data.targeted || undefined);
+      const result = await createCrawl(
+        data.url,
+        data.depth,
+        data.targeted || undefined,
+        data.maxPages
+      );
       navigate(`/crawls/${result.crawl_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start crawl");
@@ -98,6 +111,28 @@ export default function NewCrawl() {
               {errors.depth && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.depth.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Page Budget
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={MAX_PAGES_LIMIT}
+                step={100}
+                {...register("maxPages", { valueAsNumber: true })}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Stop discovering new pages once the crawl holds this many. Every
+                page is a node, so large sites fill a budget fast.
+              </p>
+              {errors.maxPages && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.maxPages.message}
                 </p>
               )}
             </div>

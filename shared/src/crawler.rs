@@ -9,6 +9,30 @@ use crate::error::CrawlerError;
 static ANCHOR_SELECTOR: LazyLock<Selector> =
     LazyLock::new(|| Selector::parse("a[href]").unwrap());
 
+/// Upper bound on links taken from a single page. A page-level crawl of a large
+/// site can expose thousands of anchors per page; past this point extra links
+/// mostly add cost, not coverage.
+pub const MAX_LINKS_PER_PAGE: usize = 500;
+
+/// Path extensions that never yield an HTML page worth crawling. Checked before
+/// the fetch so we don't spend a request (and a Neo4j node) on a binary.
+const SKIPPED_EXTENSIONS: &[&str] = &[
+    "pdf", "png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "zip", "gz", "tar", "tgz",
+    "rar", "7z", "mp3", "mp4", "webm", "avi", "mov", "css", "js", "mjs", "woff", "woff2", "ttf",
+    "eot", "xml", "rss", "atom", "json", "csv", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "exe",
+    "dmg", "apk",
+];
+
+/// True when the URL's path ends in an extension from `SKIPPED_EXTENSIONS`.
+fn has_skipped_extension(url: &Url) -> bool {
+    let path = url.path();
+    let last_segment = path.rsplit('/').next().unwrap_or(path);
+    match last_segment.rsplit_once('.') {
+        Some((_, ext)) => SKIPPED_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()),
+        None => false,
+    }
+}
+
 pub struct PageData {
     pub html: String,
     pub elapsed: Duration,
@@ -40,6 +64,20 @@ pub async fn get_page_data(client: &Client, url: &str) -> Result<PageData, Crawl
         });
     }
 
+    // Only HTML has links to follow. Reject before reading the body so a PDF or
+    // image link found in an anchor costs a HEAD-sized request, not a download.
+    // A missing header is allowed through: plenty of small servers omit it.
+    if let Some(ct) = response.headers().get(reqwest::header::CONTENT_TYPE) {
+        let ct = ct.to_str().unwrap_or_default();
+        let is_html = ct.starts_with("text/html") || ct.starts_with("application/xhtml");
+        if !is_html {
+            return Err(CrawlerError::NotHtml {
+                url: url.to_string(),
+                content_type: ct.to_string(),
+            });
+        }
+    }
+
     let html = response.text().await.map_err(|e| CrawlerError::HttpBodyRead {
         url: url.to_string(),
         source: e,
@@ -53,7 +91,8 @@ pub async fn get_page_data(client: &Client, url: &str) -> Result<PageData, Crawl
 
 /// Extracts URLs from `<a href="...">` tags in HTML content.
 /// Resolves relative URLs against the given base URL.
-/// Only returns URLs with http or https schemes.
+/// Only returns http/https URLs whose path does not end in a known non-page
+/// extension, and at most `MAX_LINKS_PER_PAGE` of them in document order.
 pub fn extract_urls(html: &str, base_url: &str) -> Vec<String> {
     let base = match Url::parse(base_url) {
         Ok(u) => u,
@@ -62,13 +101,24 @@ pub fn extract_urls(html: &str, base_url: &str) -> Vec<String> {
 
     let document = Html::parse_document(html);
 
-    document
+    let urls: Vec<String> = document
         .select(&ANCHOR_SELECTOR)
         .filter_map(|el| el.value().attr("href"))
         .filter_map(|href| base.join(href).ok())
         .filter(|url| url.scheme() == "http" || url.scheme() == "https")
+        .filter(|url| !has_skipped_extension(url))
         .map(|url| url.to_string())
-        .collect()
+        .take(MAX_LINKS_PER_PAGE + 1)
+        .collect();
+
+    if urls.len() > MAX_LINKS_PER_PAGE {
+        tracing::warn!(
+            "Page {} has more than {} links; truncating",
+            base_url,
+            MAX_LINKS_PER_PAGE
+        );
+    }
+    urls.into_iter().take(MAX_LINKS_PER_PAGE).collect()
 }
 
 #[cfg(test)]
@@ -178,8 +228,49 @@ mod tests {
 
     #[test]
     fn test_extract_urls_protocol_relative() {
-        let html = r#"<a href="//cdn.example.com/lib.js">CDN</a>"#;
+        let html = r#"<a href="//cdn.example.com/page">CDN</a>"#;
         let urls = extract_urls(html, "https://example.com/page");
-        assert_eq!(urls, vec!["https://cdn.example.com/lib.js"]);
+        assert_eq!(urls, vec!["https://cdn.example.com/page"]);
+    }
+
+    #[test]
+    fn test_extract_urls_skips_non_page_extensions() {
+        let html = r#"
+            <a href="/report.pdf">PDF</a>
+            <a href="/logo.PNG">Image</a>
+            <a href="/app.js">Script</a>
+            <a href="/archive.tar.gz">Archive</a>
+            <a href="/about">About</a>
+            <a href="/docs/index.html">Docs</a>
+            <a href="/v1.2/notes">Dotted dir</a>
+        "#;
+        let urls = extract_urls(html, "https://example.com/");
+        assert_eq!(
+            urls,
+            vec![
+                "https://example.com/about",
+                "https://example.com/docs/index.html",
+                "https://example.com/v1.2/notes",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_extract_urls_extension_check_ignores_query() {
+        // The extension lives in the path, not the query string.
+        let html = r#"<a href="/download?file=a.pdf">Q</a> <a href="/x.pdf?v=2">P</a>"#;
+        let urls = extract_urls(html, "https://example.com/");
+        assert_eq!(urls, vec!["https://example.com/download?file=a.pdf"]);
+    }
+
+    #[test]
+    fn test_extract_urls_caps_at_max_links() {
+        let html: String = (0..MAX_LINKS_PER_PAGE + 50)
+            .map(|i| format!(r#"<a href="/p/{i}">{i}</a>"#))
+            .collect();
+        let urls = extract_urls(&html, "https://example.com/");
+        assert_eq!(urls.len(), MAX_LINKS_PER_PAGE);
+        assert_eq!(urls[0], "https://example.com/p/0");
+        assert_eq!(urls[MAX_LINKS_PER_PAGE - 1], format!("https://example.com/p/{}", MAX_LINKS_PER_PAGE - 1));
     }
 }

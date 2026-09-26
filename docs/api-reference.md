@@ -21,13 +21,14 @@ Start a new crawl from a given URL.
 | `url` | string | Yes | The URL to crawl (must be http or https) |
 | `depth` | integer | Yes | Maximum link depth to follow (1–5, where 1 = root only) |
 | `targeted` | boolean | No | When `true`, only follow links within the same registered domain (eTLD+1) as the root URL. Defaults to `false`. |
+| `max_pages` | integer | No | Node budget for the crawl (1–10000). Feeders stop creating child pages once the crawl holds this many. Defaults to `1000`. |
 
 **Example:**
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/crawls \
   -H 'Content-Type: application/json' \
-  -d '{"url": "https://example.com", "depth": 2, "targeted": true}'
+  -d '{"url": "https://example.com", "depth": 2, "targeted": true, "max_pages": 1000}'
 ```
 
 **Response:** `201 Created`
@@ -43,6 +44,8 @@ curl -X POST http://localhost:8080/api/v1/crawls \
 
 | Status | Cause |
 |--------|-------|
+| `400 Bad Request` | `depth` or `max_pages` out of range, or targeted crawl of a bare public suffix |
+| `422 Unprocessable Entity` | Root URL is not an HTML page (e.g. a PDF); there is nothing to crawl from it |
 | `502 Bad Gateway` | Root URL DNS resolution failed or HTTP error from target |
 | `504 Gateway Timeout` | Root URL request timed out |
 | `404 Not Found` | Root URL returned HTTP 404 |
@@ -79,14 +82,15 @@ curl "http://localhost:8080/api/v1/crawls?status=running&limit=10"
   "crawls": [
     {
       "crawl_id": "d262a3e7-19de-437f-b0a4-cf1d689b1caf",
-      "root_url": "HTTPS://EXAMPLE.COM",
+      "root_url": "HTTPS://example.com",
       "requested_depth": 2,
       "status": "completed",
       "total": 42,
       "completed": 40,
       "failed": 2,
       "cancelled": 0,
-      "targeted": true
+      "targeted": true,
+      "max_pages": 1000
     }
   ],
   "total": 1,
@@ -129,9 +133,10 @@ curl http://localhost:8080/api/v1/crawls/d262a3e7-19de-437f-b0a4-cf1d689b1caf
   "in_progress": 26,
   "failed": 60,
   "cancelled": 0,
-  "root_url": "https://example.com",
+  "root_url": "HTTPS://example.com",
   "requested_depth": 3,
-  "targeted": false
+  "targeted": false,
+  "max_pages": 1000
 }
 ```
 

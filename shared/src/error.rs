@@ -29,6 +29,9 @@ pub enum CrawlerError {
         source: reqwest::Error,
     },
 
+    #[error("Non-HTML response from {url}: {content_type}")]
+    NotHtml { url: String, content_type: String },
+
     #[error("Neo4j query failed: {0}")]
     Neo4jQuery(String),
 }

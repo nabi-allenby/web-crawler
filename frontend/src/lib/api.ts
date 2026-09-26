@@ -20,12 +20,18 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
 export async function createCrawl(
   url: string,
   depth: number,
-  targeted?: boolean
+  targeted?: boolean,
+  maxPages?: number
 ): Promise<CrawlResponse> {
   return fetchJSON(`${BASE}/crawls`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url, depth, ...(targeted ? { targeted } : {}) }),
+    body: JSON.stringify({
+      url,
+      depth,
+      ...(targeted ? { targeted } : {}),
+      ...(maxPages ? { max_pages: maxPages } : {}),
+    }),
   });
 }
 

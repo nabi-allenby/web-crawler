@@ -1,11 +1,42 @@
 use hickory_resolver::TokioResolver;
+use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
 
 use crate::error::CrawlerError;
 
+#[derive(Debug, Clone)]
 pub struct NetworkStats {
     pub domain: String,
     pub ip: String,
+}
+
+/// Resolves each distinct host once, in parallel, and returns the results keyed
+/// by host. Hosts that fail to resolve are logged and left out of the map.
+///
+/// Page-level crawling means a single page can link to hundreds of pages on the
+/// same host; resolving per link would issue that many identical lookups.
+pub async fn resolve_hosts<'a>(
+    resolver: &TokioResolver,
+    hosts: impl IntoIterator<Item = &'a str>,
+    max_depth: usize,
+) -> HashMap<String, NetworkStats> {
+    let distinct: HashSet<&str> = hosts.into_iter().collect();
+
+    let futures = distinct.into_iter().map(|host| async move {
+        match get_network_stats(resolver, host, max_depth).await {
+            Ok(stats) => Some((host.to_string(), stats)),
+            Err(e) => {
+                tracing::warn!("DNS resolution failed for {}: {}", host, e);
+                None
+            }
+        }
+    });
+
+    futures::future::join_all(futures)
+        .await
+        .into_iter()
+        .flatten()
+        .collect()
 }
 
 /// Resolves a normalized URL (already uppercased, no protocol) to domain and IPv4 address.

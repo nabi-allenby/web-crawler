@@ -2,17 +2,30 @@ use neo4rs::{query, Graph};
 
 use crate::models::crawl::{CrawlListItem, CrawlProgress, CrawlStats, StatusCounts};
 
+/// A depth-1 page discovered on the root page, resolved and ready to store.
+pub struct ChildUrl {
+    pub name: String,
+    pub host: String,
+    pub ip: String,
+    pub domain: String,
+    pub http_type: String,
+}
+
 pub struct CreateCrawlParams<'a> {
     pub crawl_id: &'a str,
     pub root_name: &'a str,
+    pub root_host: &'a str,
     pub root_ip: &'a str,
     pub root_domain: &'a str,
     pub http_type: &'a str,
     pub depth: i64,
     pub request_time: &'a str,
-    pub children: &'a [(String, String, String, String)],
+    pub children: &'a [ChildUrl],
     pub targeted: bool,
     pub target_domain: &'a str,
+    /// Upper bound on URL nodes for the crawl; propagated to every node so the
+    /// feeders can enforce it without an extra lookup.
+    pub max_pages: i64,
 }
 
 /// Create ROOT node and child URL nodes in a single transaction with crawl_id.
@@ -25,12 +38,13 @@ pub async fn create_crawl_graph(
     // Create ROOT node with crawl_id
     txn.run(
         query(
-            "CREATE (:ROOT {name: $name, ip: $ip, domain: $domain, http_type: $http_type, \
+            "CREATE (:ROOT {name: $name, host: $host, ip: $ip, domain: $domain, http_type: $http_type, \
              requested_depth: $req_depth, current_depth: 0, request_time: $req_time, \
              crawl_id: $crawl_id, created_at: datetime(), \
-             targeted: $targeted, target_domain: $target_domain})",
+             targeted: $targeted, target_domain: $target_domain, max_pages: $max_pages})",
         )
         .param("name", params.root_name)
+        .param("host", params.root_host)
         .param("ip", params.root_ip)
         .param("domain", params.root_domain)
         .param("http_type", params.http_type)
@@ -38,32 +52,38 @@ pub async fn create_crawl_graph(
         .param("req_time", params.request_time)
         .param("crawl_id", params.crawl_id)
         .param("targeted", params.targeted)
-        .param("target_domain", params.target_domain),
+        .param("target_domain", params.target_domain)
+        .param("max_pages", params.max_pages),
     )
     .await?;
 
-    // Create child URL nodes and Lead relationships with crawl_id
-    for (child_name, child_ip, child_domain, child_http_type) in params.children {
+    // Create child URL nodes and Lead relationships with crawl_id. The root page
+    // alone can exceed the cap, so honour it here too.
+    let limit = usize::try_from(params.max_pages).unwrap_or(usize::MAX);
+    for child in params.children.iter().take(limit) {
         txn.run(
             query(
                 "MATCH (root:ROOT {crawl_id: $crawl_id}) \
                  MERGE (c:URL {name: $name, http_type: $http_type, crawl_id: $crawl_id}) \
-                 ON CREATE SET c.ip = $ip, c.domain = $domain, \
+                 ON CREATE SET c.host = $host, c.ip = $ip, c.domain = $domain, \
                      c.job_status = CASE WHEN 1 = $req_depth THEN 'COMPLETED' ELSE 'PENDING' END, \
                      c.requested_depth = $req_depth, \
                      c.current_depth = 1, c.request_time = $req_time, \
-                     c.targeted = $targeted, c.target_domain = $target_domain \
+                     c.targeted = $targeted, c.target_domain = $target_domain, \
+                     c.max_pages = $max_pages \
                  MERGE (root)-[:Lead]->(c)",
             )
             .param("crawl_id", params.crawl_id)
             .param("req_depth", params.depth)
-            .param("name", child_name.as_str())
-            .param("ip", child_ip.as_str())
-            .param("domain", child_domain.as_str())
-            .param("http_type", child_http_type.as_str())
+            .param("name", child.name.as_str())
+            .param("host", child.host.as_str())
+            .param("ip", child.ip.as_str())
+            .param("domain", child.domain.as_str())
+            .param("http_type", child.http_type.as_str())
             .param("req_time", params.request_time)
             .param("targeted", params.targeted)
-            .param("target_domain", params.target_domain),
+            .param("target_domain", params.target_domain)
+            .param("max_pages", params.max_pages),
         )
         .await?;
     }
@@ -91,7 +111,7 @@ pub async fn get_crawl_progress(
                    sum(CASE WHEN u.job_status = 'FAILED' THEN 1 ELSE 0 END) AS failed, \
                    sum(CASE WHEN u.job_status = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled \
                  RETURN r.name AS root_url, r.requested_depth AS depth, r.http_type AS http_type, \
-                   r.targeted AS targeted, \
+                   r.targeted AS targeted, r.max_pages AS max_pages, \
                    total, completed, pending, in_progress, failed, cancelled",
             )
             .param("crawl_id", crawl_id),
@@ -129,6 +149,8 @@ pub async fn get_crawl_progress(
                     };
 
                     let targeted: bool = row.get::<bool>("targeted").unwrap_or(false);
+                    // Crawls created before the cap existed have no max_pages.
+                    let max_pages: i64 = row.get::<i64>("max_pages").unwrap_or(0);
 
                     Ok(Some(CrawlProgress {
                         crawl_id: crawl_id.to_string(),
@@ -142,6 +164,7 @@ pub async fn get_crawl_progress(
                         root_url: format!("{}{}", http_type, url),
                         requested_depth: depth,
                         targeted,
+                        max_pages,
                     }))
                 }
                 None => Ok(None),
@@ -178,7 +201,7 @@ pub async fn list_crawls(
          UNWIND items[$offset..($offset + $limit)] AS item \
          RETURN item.r.crawl_id AS crawl_id, item.r.name AS root_url, \
            item.r.http_type AS http_type, item.r.requested_depth AS depth, \
-           item.r.targeted AS targeted, \
+           item.r.targeted AS targeted, item.r.max_pages AS max_pages, \
            item.total AS total, item.completed AS completed, item.failed AS failed, item.cancelled AS cancelled, item.status AS status, \
            total_count"
     } else {
@@ -199,7 +222,7 @@ pub async fn list_crawls(
          UNWIND items[$offset..($offset + $limit)] AS item \
          RETURN item.r.crawl_id AS crawl_id, item.r.name AS root_url, \
            item.r.http_type AS http_type, item.r.requested_depth AS depth, \
-           item.r.targeted AS targeted, \
+           item.r.targeted AS targeted, item.r.max_pages AS max_pages, \
            item.total AS total, item.completed AS completed, item.failed AS failed, item.cancelled AS cancelled, item.status AS status, \
            total_count"
     };
@@ -231,6 +254,7 @@ pub async fn list_crawls(
             failed: row.get("failed")?,
             cancelled: row.get("cancelled")?,
             targeted: row.get::<bool>("targeted").unwrap_or(false),
+            max_pages: row.get::<i64>("max_pages").unwrap_or(0),
         });
     }
 
