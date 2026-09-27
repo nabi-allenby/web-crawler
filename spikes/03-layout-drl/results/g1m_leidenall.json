@@ -1,0 +1,1 @@
+{"tag": "g1m", "phase": "leidenall", "N": 1000000, "E": 12386365, "load_s": 16.03, "rss_after_load_mb": 1505.4, "leiden_s": 92.53, "n_iter": -1, "communities": 513, "comms_ge_100": 513, "largest": 125322, "modularity": 0.7786, "nmi_vs_planted": 0.9784, "planted_modularity": 0.7784, "peak_rss_mb": 1505.4}

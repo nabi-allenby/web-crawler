@@ -1,0 +1,74 @@
+Pager usage is off.
+BEGIN
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Update on domains d (actual time=9.966..11.473 rows=32.00 loops=1)
+   Buffers: shared hit=1758 read=10 dirtied=9
+   I/O Timings: shared read=0.242
+   CTE win
+     ->  Limit (actual time=1.342..7.296 rows=10000.00 loops=1)
+           Buffers: shared hit=988 read=1
+           I/O Timings: shared read=0.057
+           ->  Incremental Sort (actual time=1.342..6.681 rows=10000.00 loops=1)
+                 Sort Key: domains.discovered_at, domains.id
+                 Presorted Key: domains.discovered_at
+                 Full-sort Groups: 313  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+                 Buffers: shared hit=988 read=1
+                 I/O Timings: shared read=0.057
+                 ->  Index Scan using domains_status_disc on domains (actual time=0.054..5.461 rows=10001.00 loops=1)
+                       Index Cond: (status = 0)
+                       Index Searches: 1
+                       Buffers: shared hit=979 read=1
+                       I/O Timings: shared read=0.057
+   CTE pick
+     ->  Limit (actual time=9.724..9.728 rows=32.00 loops=1)
+           Buffers: shared hit=991 read=1
+           I/O Timings: shared read=0.057
+           ->  Sort (actual time=9.723..9.725 rows=32.00 loops=1)
+                 Sort Key: (random())
+                 Sort Method: top-N heapsort  Memory: 27kB
+                 Buffers: shared hit=991 read=1
+                 I/O Timings: shared read=0.057
+                 ->  CTE Scan on win (actual time=1.375..8.914 rows=10000.00 loops=1)
+                       Storage: Memory  Maximum Storage: 519kB
+                       Buffers: shared hit=988 read=1
+                       I/O Timings: shared read=0.057
+   CTE locked
+     ->  LockRows (actual time=9.787..10.031 rows=32.00 loops=1)
+           Buffers: shared hit=1151 read=1
+           I/O Timings: shared read=0.057
+           ->  Nested Loop (actual time=9.775..9.964 rows=32.00 loops=1)
+                 Buffers: shared hit=1119 read=1
+                 I/O Timings: shared read=0.057
+                 ->  HashAggregate (actual time=9.755..9.764 rows=32.00 loops=1)
+                       Group Key: pick.id
+                       Batches: 1  Memory Usage: 32kB
+                       Buffers: shared hit=991 read=1
+                       I/O Timings: shared read=0.057
+                       ->  CTE Scan on pick (actual time=9.733..9.744 rows=32.00 loops=1)
+                             Storage: Memory  Maximum Storage: 18kB
+                             Buffers: shared hit=991 read=1
+                             I/O Timings: shared read=0.057
+                 ->  Index Scan using domains_pkey on domains d_1 (actual time=0.006..0.006 rows=1.00 loops=32)
+                       Index Cond: (id = pick.id)
+                       Filter: (status = 0)
+                       Index Searches: 32
+                       Buffers: shared hit=128
+   ->  Nested Loop (actual time=9.796..10.105 rows=32.00 loops=1)
+         Buffers: shared hit=1279 read=1
+         I/O Timings: shared read=0.057
+         ->  CTE Scan on locked (actual time=9.791..10.055 rows=32.00 loops=1)
+               Storage: Memory  Maximum Storage: 19kB
+               Buffers: shared hit=1151 read=1
+               I/O Timings: shared read=0.057
+         ->  Index Scan using domains_pkey on domains d (actual time=0.001..0.001 rows=1.00 loops=32)
+               Index Cond: (id = locked.id)
+               Index Searches: 32
+               Buffers: shared hit=128
+ Planning:
+   Buffers: shared hit=204
+ Planning Time: 0.988 ms
+ Execution Time: 11.641 ms
+(67 rows)
+
+ROLLBACK

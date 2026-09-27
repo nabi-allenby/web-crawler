@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "umap", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 159.5, "setup_s": 0.18, "layout_s": 5.64, "peak_rss_layout_mb": 596.5, "nan": 0, "edge_len_ratio": 0.2448, "knn10_purity": 0.988, "png": "<scratch>/layout-alt-spike/results/g100k_umap.png"}

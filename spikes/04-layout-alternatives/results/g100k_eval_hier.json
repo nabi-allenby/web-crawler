@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "eval_hier", "opts": {"src": "hier"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 149.8, "layout_s": 0.0, "peak_rss_layout_mb": 150.6, "nan": 0, "edge_len_ratio": 0.2974, "knn10_purity": 0.9386, "png": "<scratch>/layout-alt-spike/results/g100k_eval_hier.png"}

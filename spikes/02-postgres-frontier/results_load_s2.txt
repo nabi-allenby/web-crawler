@@ -1,0 +1,48 @@
+Timing is on.
+NOTICE:  table "domains" does not exist, skipping
+DROP TABLE
+Time: 0.323 ms
+CREATE TABLE
+Time: 3.497 ms
+INSERT 0 50000000
+Time: 81101.984 ms (01:21.102)
+  setval  
+----------
+ 50000000
+(1 row)
+
+Time: 9.157 ms
+ALTER TABLE
+Time: 23784.272 ms (00:23.784)
+CREATE INDEX
+Time: 48203.263 ms (00:48.203)
+CREATE INDEX
+Time: 10222.626 ms (00:10.223)
+CREATE INDEX
+Time: 11312.063 ms (00:11.312)
+VACUUM
+Time: 17246.099 ms (00:17.246)
+  heap   | heap_bytes_per_row | all_idx 
+---------+--------------------+---------
+ 4816 MB |                100 | 5775 MB
+(1 row)
+
+Time: 3180.474 ms (00:03.180)
+    indexrelname     | pg_size_pretty 
+---------------------+----------------
+ domains_pkey        | 1071 MB
+ domains_name_key    | 2362 MB
+ domains_frontier    | 1202 MB
+ domains_frontier_rk | 1140 MB
+(4 rows)
+
+Time: 9.504 ms
+ status |  count   
+--------+----------
+      0 | 40005925
+      2 |  9691215
+      3 |   302860
+(3 rows)
+
+Time: 3941.521 ms (00:03.942)
+docker exec -i pgspike psql -U postgres -d s2 -v n=50000000 -v v=10000000 <   0.01s user 0.03s system 0% cpu 3:19.22 total

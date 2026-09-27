@@ -1,0 +1,1 @@
+{"tag": "g100k", "phase": "hier", "N": 100000, "communities": 179, "contract_s": 0.03, "comm_layout_s": 0.09, "overlap_s": 0.04, "local_s": 0.02, "hier_total_s": 0.18, "edge_len_ratio": 0.2974, "peak_rss_mb": 204.2}

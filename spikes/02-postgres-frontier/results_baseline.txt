@@ -1,0 +1,2 @@
+select 1 p50=0.22 p95=0.48 p99=1.18
+update domains set claimed_at=now() where id=1 p50=0.39 p95=1.13 p99=1.52

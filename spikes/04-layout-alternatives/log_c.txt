@@ -1,0 +1,18 @@
+         "cpycppyy/CommonDefs.h"
+{"tag": "g100k", "method": "fm3", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 158.2, "layout_s": 12.86, "peak_rss_layout_mb": 1681.8, "nan": 0, "edge_len_ratio": 0.4283, "knn10_purity": 0.2188, "png": "<scratch>/layout-alt-spike/results/g100k_fm3.png"}
+[guard] wall=14.2s ru_maxrss=1682MB polled_max=1657MB exit=0 
+{"tag": "g100k", "method": "hier2", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 152.0, "refined_communities": 5, "layout_s": 8.93, "peak_rss_layout_mb": 286.1, "nan": 0, "edge_len_ratio": 0.2855, "knn10_purity": 0.9416, "png": "<scratch>/layout-alt-spike/results/g100k_hier2.png"}
+[guard] wall=10.1s ru_maxrss=388MB polled_max=286MB exit=0 
+  P = sp.diags(1 / np.asarray(A.sum(1)).ravel()) @ A
+{"tag": "g1m", "method": "tsne_day2seeded", "opts": {"drop": "0.02", "init": "tsne", "keepscale": "1", "iters": "250"}, "threads": 8, "N": 1000000, "E": 12138989, "rss_after_load_mb": 959.5, "setup_s": 0.8, "layout_s": 96.85, "peak_rss_layout_mb": 1506.1, "nan": 0, "edge_len_ratio": 0.2468, "knn10_purity": 0.9801, "disp_vs_init_median": 0.0194, "png": "<scratch>/layout-alt-spike/results/g1m_tsne_day2seeded.png"}
+[guard] wall=101.3s ru_maxrss=1506MB polled_max=1506MB exit=0 
+  T = sp.diags(1 / np.asarray(A.sum(1)).ravel()) @ A
+{"tag": "g1m", "method": "tsne_day2fresh", "opts": {"drop": "0.02", "seed": "1"}, "threads": 8, "N": 1000000, "E": 12138989, "rss_after_load_mb": 1229.6, "setup_s": 5.29, "layout_s": 266.37, "peak_rss_layout_mb": 1814.2, "nan": 0, "edge_len_ratio": 0.2469, "knn10_purity": 0.9802, "png": "<scratch>/layout-alt-spike/results/g1m_tsne_day2fresh.png"}
+[guard] wall=271.2s ru_maxrss=1814MB polled_max=1777MB exit=0 
+{"tag": "g1m", "method": "hier2", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1137.9, "refined_communities": 78, "layout_s": 151.05, "peak_rss_layout_mb": 1234.1, "nan": 0, "edge_len_ratio": 0.2559, "knn10_purity": 0.8613, "png": "<scratch>/layout-alt-spike/results/g1m_hier2.png"}
+[guard] wall=155.4s ru_maxrss=1334MB polled_max=1303MB exit=0 
+{"tag": "g1m", "method": "fastrp_umap", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1138.8, "embed_s": 16.55, "layout_s": 151.03, "peak_rss_layout_mb": 2495.9, "nan": 0, "edge_len_ratio": 0.6146, "knn10_purity": 0.23, "png": "<scratch>/layout-alt-spike/results/g1m_fastrp_umap.png"}
+[guard] wall=156.1s ru_maxrss=2496MB polled_max=2470MB exit=0 
+         ^~~~~~~~~~~~~~~~~~~~~~~
+         "cpycppyy/CommonDefs.h"
+[guard] wall=6.2s ru_maxrss=5220MB polled_max=5131MB exit=9 KILLED rss=5131MB elapsed=6s

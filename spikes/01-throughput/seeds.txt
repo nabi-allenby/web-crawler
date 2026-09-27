@@ -1,0 +1,12 @@
+wikipedia.org
+bbc.co.uk
+github.com
+lemonde.fr
+nasa.gov
+mozilla.org
+spiegel.de
+nhk.or.jp
+stackoverflow.com
+craigslist.org
+elpais.com
+abc.net.au

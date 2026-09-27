@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "fastrp_umap", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 148.7, "embed_s": 3.48, "layout_s": 20.58, "peak_rss_layout_mb": 1164.4, "nan": 0, "edge_len_ratio": 0.3662, "knn10_purity": 0.7105, "png": "<scratch>/layout-alt-spike/results/g100k_fastrp_umap.png"}

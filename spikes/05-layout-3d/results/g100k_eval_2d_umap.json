@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "eval_2d_umap", "opts": {"src": "../layout-alt-spike/data/g100k_xy_umap.npy"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 267.2, "layout_s": 0.0, "log": ["no timing: ../layout-alt-spike/data/g100k_xy_umap.npy"], "peak_rss_mb": 267.2, "purity": 0.988, "recall": 0.047}

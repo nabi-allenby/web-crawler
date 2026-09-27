@@ -1,0 +1,7 @@
+{"file": "g1m_xy_tsne.npy", "nbr_recall": 0.0527, "intra_recall": 0.0531, "intra_recall_random": 0.0122}
+{"file": "g1m_xy_umap.npy", "nbr_recall": 0.0191, "intra_recall": 0.0217, "intra_recall_random": 0.0122}
+{"file": "g1m_xy_spectral.npy", "nbr_recall": 0.0027, "intra_recall": 0.0192, "intra_recall_random": 0.0122}
+{"file": "g1m_xy_hier2.npy", "nbr_recall": 0.0167, "intra_recall": 0.0236, "intra_recall_random": 0.0122}
+{"file": "g1m_xy_fastrp_umap.npy", "nbr_recall": 0.0107, "intra_recall": 0.023, "intra_recall_random": 0.0122}
+{"file": "g1m_xy_tsne_day2seeded.npy", "nbr_recall": 0.0604, "intra_recall": 0.0648, "intra_recall_random": 0.0122}
+{"file": "g1m_xy_hier.npy", "nbr_recall": 0.0143, "intra_recall": 0.0215, "intra_recall_random": 0.0122}

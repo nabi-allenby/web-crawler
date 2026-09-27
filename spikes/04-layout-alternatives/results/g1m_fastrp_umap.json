@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "fastrp_umap", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1138.8, "embed_s": 16.55, "layout_s": 151.03, "peak_rss_layout_mb": 2495.9, "nan": 0, "edge_len_ratio": 0.6146, "knn10_purity": 0.23, "png": "<scratch>/layout-alt-spike/results/g1m_fastrp_umap.png"}

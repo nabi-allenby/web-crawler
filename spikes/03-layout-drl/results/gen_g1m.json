@@ -1,0 +1,1 @@
+{"N": 1000000, "K": 800, "undirected_edges": 12386365, "gen_s": 2.86, "undeg_max": 49256, "undeg_p99": 122.0, "isolated": 0, "comm_size_max": 125879, "comm_size_min": 266, "peak_rss_mb": 1366.1, "directed_edges_raw": 13008759, "outdeg_median": 8.0, "outdeg_mean": 13.008759, "outdeg_p95": 40.0}

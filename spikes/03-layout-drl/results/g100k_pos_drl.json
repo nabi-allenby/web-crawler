@@ -1,0 +1,1 @@
+{"tag": "g100k", "phase": "pos", "N": 100000, "layout": "drl", "bytes_per_node": 16, "raw_mb": 1.6, "gzip_interleaved_mb": 1.13, "gzip_columnar_mb": 1.09, "gzip_s": 0.05, "peak_rss_mb": 69.1}

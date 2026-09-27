@@ -1,0 +1,1 @@
+{"tag": "g100k", "phase": "drlfast", "N": 100000, "E": 1200743, "load_s": 0.61, "rss_after_load_mb": 279.9, "drl_s": 570.79, "edge_len_ratio": 0.2187, "peak_rss_mb": 341.6}

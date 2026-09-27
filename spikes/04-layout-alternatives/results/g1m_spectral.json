@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "spectral", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1135.3, "layout_s": 6.51, "peak_rss_layout_mb": 1357.2, "nan": 0, "edge_len_ratio": 0.348, "knn10_purity": 0.1554, "png": "<scratch>/layout-alt-spike/results/g1m_spectral.png"}

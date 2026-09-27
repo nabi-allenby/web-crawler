@@ -1,6 +1,6 @@
 # Explorer design
 
-> Status: **draft for sign-off**. Decided through a design review on 2026-09-25 to 27 (decision log at the end), backed by spikes on throughput, Postgres, layout and 3D layouts.
+> Status: **approved**. Decided through a design review on 2026-09-25 to 27 (decision log at the end). The spikes on throughput, Postgres, layout and 3D layouts, with their code, results and research sources, are in [`spikes/`](../spikes/README.md).
 
 ## Summary
 

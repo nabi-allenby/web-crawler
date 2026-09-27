@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "spectral", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 149.6, "layout_s": 0.42, "peak_rss_layout_mb": 188.2, "nan": 0, "edge_len_ratio": 0.3364, "knn10_purity": 0.3034, "png": "<scratch>/layout-alt-spike/results/g100k_spectral.png"}

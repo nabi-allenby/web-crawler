@@ -1,0 +1,47 @@
+Timing is on.
+NOTICE:  table "domains" does not exist, skipping
+DROP TABLE
+Time: 0.280 ms
+CREATE TABLE
+Time: 2.342 ms
+INSERT 0 5000000
+Time: 8216.798 ms (00:08.217)
+ setval  
+---------
+ 5000000
+(1 row)
+
+Time: 4.863 ms
+ALTER TABLE
+Time: 937.394 ms
+CREATE INDEX
+Time: 4089.420 ms (00:04.089)
+CREATE INDEX
+Time: 1014.940 ms (00:01.015)
+CREATE INDEX
+Time: 978.555 ms
+VACUUM
+Time: 483.493 ms
+  heap  | heap_bytes_per_row | all_idx 
+--------+--------------------+---------
+ 481 MB |                100 | 570 MB
+(1 row)
+
+Time: 60.357 ms
+    indexrelname     | pg_size_pretty 
+---------------------+----------------
+ domains_pkey        | 107 MB
+ domains_name_key    | 228 MB
+ domains_frontier    | 120 MB
+ domains_frontier_rk | 114 MB
+(4 rows)
+
+Time: 2.381 ms
+ status |  count  
+--------+---------
+      0 | 4005934
+      2 |  963929
+      3 |   30137
+(3 rows)
+
+Time: 135.413 ms

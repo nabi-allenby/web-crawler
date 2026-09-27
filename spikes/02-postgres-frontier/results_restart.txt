@@ -1,0 +1,122 @@
+== s1
+Timing is on.
+Pager usage is off.
+UPDATE 5000
+Time: 1159.251 ms (00:01.159)
+CHECKPOINT
+Time: 4358.722 ms (00:04.359)
+ status |  count  
+--------+---------
+      0 | 2717798
+      1 |  392954
+      2 | 2439889
+      3 |   31671
+(4 rows)
+
+Time: 1780.187 ms (00:01.780)
+                                    QUERY PLAN                                    
+----------------------------------------------------------------------------------
+ Update on domains (actual time=2357.253..2357.256 rows=0.00 loops=1)
+   ->  Seq Scan on domains (actual time=11.330..800.994 rows=10647.00 loops=1)
+         Filter: ((status = 1) AND (claimed_at < (now() - '00:05:00'::interval)))
+         Rows Removed by Filter: 5571665
+ Planning:
+ Planning Time: 0.724 ms
+ Execution Time: 2358.557 ms
+(12 rows)
+
+Time: 2390.055 ms (00:02.390)
+BEGIN
+Time: 0.268 ms
+UPDATE 5000
+Time: 151.114 ms
+COMMIT
+Time: 0.867 ms
+CREATE INDEX
+Time: 469.053 ms
+                                             QUERY PLAN                                             
+----------------------------------------------------------------------------------------------------
+ Update on domains (actual time=104.678..104.679 rows=0.00 loops=1)
+   ->  Index Scan using domains_visiting on domains (actual time=0.133..1.830 rows=5000.00 loops=1)
+         Index Cond: (claimed_at < (now() - '00:05:00'::interval))
+         Filter: (status = 1)
+         Index Searches: 1
+ Planning:
+ Planning Time: 0.664 ms
+ Execution Time: 104.804 ms
+(14 rows)
+
+Time: 109.257 ms
+ visiting_idx 
+--------------
+ 2968 kB
+(1 row)
+
+Time: 3.286 ms
+ visiting 
+----------
+   382307
+(1 row)
+
+Time: 157.727 ms
+== s2
+Timing is on.
+Pager usage is off.
+UPDATE 5000
+Time: 1718.145 ms (00:01.718)
+CHECKPOINT
+Time: 1895.959 ms (00:01.896)
+ status |  count   
+--------+----------
+      0 | 39809003
+      1 |     5000
+      2 | 10071536
+      3 |   304557
+(4 rows)
+
+Time: 15896.024 ms (00:15.896)
+                                    QUERY PLAN                                    
+----------------------------------------------------------------------------------
+ Update on domains (actual time=11350.632..11350.656 rows=0.00 loops=1)
+   ->  Seq Scan on domains (actual time=2663.435..9292.046 rows=5000.00 loops=1)
+         Filter: ((status = 1) AND (claimed_at < (now() - '00:05:00'::interval)))
+         Rows Removed by Filter: 50185096
+ Planning:
+ Planning Time: 1.004 ms
+ Execution Time: 11352.294 ms
+(13 rows)
+
+Time: 11358.128 ms (00:11.358)
+BEGIN
+Time: 0.223 ms
+UPDATE 5000
+Time: 568.141 ms
+COMMIT
+Time: 20.619 ms
+CREATE INDEX
+Time: 5749.512 ms (00:05.750)
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
+ Update on domains (actual time=654.177..654.177 rows=0.00 loops=1)
+   ->  Index Scan using domains_visiting on domains (actual time=0.073..39.087 rows=5000.00 loops=1)
+         Index Cond: (claimed_at < (now() - '00:05:00'::interval))
+         Filter: (status = 1)
+         Index Searches: 1
+ Planning:
+ Planning Time: 1.375 ms
+ Execution Time: 654.315 ms
+(14 rows)
+
+Time: 683.812 ms
+ visiting_idx 
+--------------
+ 56 kB
+(1 row)
+
+Time: 13.264 ms
+ visiting 
+----------
+        0
+(1 row)
+
+Time: 37.857 ms

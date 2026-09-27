@@ -1,0 +1,1 @@
+{"tag": "g100k", "phase": "leidenall", "N": 100000, "E": 1200743, "load_s": 0.47, "rss_after_load_mb": 292.7, "leiden_s": 1.15, "n_iter": -1, "communities": 181, "comms_ge_100": 181, "largest": 12460, "modularity": 0.7651, "nmi_vs_planted": 0.9884, "planted_modularity": 0.7649, "peak_rss_mb": 320.3}

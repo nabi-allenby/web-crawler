@@ -1,0 +1,1 @@
+{"tag": "g1m", "phase": "pos", "N": 1000000, "layout": "hier", "bytes_per_node": 16, "raw_mb": 16.0, "gzip_interleaved_mb": 11.96, "gzip_columnar_mb": 11.16, "gzip_s": 0.86, "peak_rss_mb": 191.7}

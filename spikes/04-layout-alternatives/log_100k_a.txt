@@ -1,0 +1,12 @@
+{"tag": "g100k", "method": "tsne", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 154.3, "setup_s": 0.17, "layout_s": 23.19, "peak_rss_layout_mb": 541.4, "nan": 0, "edge_len_ratio": 0.2699, "knn10_purity": 0.9781, "png": "<scratch>/layout-alt-spike/results/g100k_tsne.png"}
+[guard] wall=24.2s ru_maxrss=546MB polled_max=541MB exit=0 
+{"tag": "g100k", "method": "umap", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 159.5, "setup_s": 0.18, "layout_s": 5.64, "peak_rss_layout_mb": 596.5, "nan": 0, "edge_len_ratio": 0.2448, "knn10_purity": 0.988, "png": "<scratch>/layout-alt-spike/results/g100k_umap.png"}
+[guard] wall=7.1s ru_maxrss=722MB polled_max=697MB exit=0 
+{"tag": "g100k", "method": "eval_hier", "opts": {"src": "hier"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 149.8, "layout_s": 0.0, "peak_rss_layout_mb": 150.6, "nan": 0, "edge_len_ratio": 0.2974, "knn10_purity": 0.9386, "png": "<scratch>/layout-alt-spike/results/g100k_eval_hier.png"}
+[guard] wall=1.0s ru_maxrss=341MB polled_max=0MB exit=0 
+{"tag": "g100k", "method": "eval_drl", "opts": {"src": "drl"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 149.9, "layout_s": 0.0, "peak_rss_layout_mb": 150.7, "nan": 0, "edge_len_ratio": 0.2184, "knn10_purity": 0.99, "png": "<scratch>/layout-alt-spike/results/g100k_eval_drl.png"}
+[guard] wall=1.0s ru_maxrss=340MB polled_max=0MB exit=0 
+{"tag": "g100k", "method": "sgd2", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 148.8, "layout_s": 4.37, "peak_rss_layout_mb": 884.6, "nan": 0, "edge_len_ratio": 0.8251, "knn10_purity": 0.0597, "png": "<scratch>/layout-alt-spike/results/g100k_sgd2.png"}
+[guard] wall=6.0s ru_maxrss=885MB polled_max=629MB exit=0 
+{"tag": "g100k", "method": "fastrp_umap", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 148.7, "embed_s": 3.48, "layout_s": 20.58, "peak_rss_layout_mb": 1164.4, "nan": 0, "edge_len_ratio": 0.3662, "knn10_purity": 0.7105, "png": "<scratch>/layout-alt-spike/results/g100k_fastrp_umap.png"}
+[guard] wall=22.2s ru_maxrss=1164MB polled_max=1144MB exit=0 

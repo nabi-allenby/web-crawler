@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>3D graph UMAP</title>
+<script src="https://unpkg.com/deck.gl@9.1.14/dist.min.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: #0f1117; color: #e6e6e6; font: 13px/1.5 system-ui, sans-serif; }
+  #app { position: absolute; inset: 0; }
+  #info { position: absolute; top: 12px; left: 12px; z-index: 1; max-width: 300px; padding: 10px 12px;
+          background: rgba(15, 17, 23, 0.85); border: 0.5px solid #333; border-radius: 8px; }
+  #info b { font-weight: 500; }
+  #status { color: #9aa0a6; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="info">
+  <b>3D graph UMAP: 1M synthetic sites</b><br>
+  <span id="status">Loading…</span><br>
+  Drag to rotate, right-drag to pan, scroll to zoom.<br>
+  Click a dot to spotlight its community; click again to clear.
+</div>
+<script>
+(async () => {
+  // ?d=<layout folder>, e.g. ?d=umap3d or ?d=tsne3d. Communities and links are shared by every layout.
+  const d = new URLSearchParams(location.search).get("d") || "umap3d";
+  const get = (f) => fetch(f).then((r) => r.arrayBuffer());
+  const [posBuf, commBuf, linksBuf, meta] = await Promise.all([
+    get(`${d}/positions.f32`), get("community.u16"), get("links.u32"), fetch(`${d}/meta.json`).then((r) => r.json()),
+  ]);
+  document.title = `3D map: ${d}`;
+  document.querySelector("#info b").textContent = `3D map: ${meta.label || d}`;
+  const N = meta.n;
+  const pos = new Float32Array(posBuf), comm = new Uint16Array(commBuf), links = new Uint32Array(linksBuf);
+
+  // One color per community, spread around the hue wheel by the golden angle.
+  const hsl = (h, s, l) => {
+    const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [f(0) * 255, f(8) * 255, f(4) * 255];
+  };
+  let maxC = 0; for (let i = 0; i < N; i++) if (comm[i] > maxC) maxC = comm[i];
+  const palette = [];
+  for (let c = 0; c <= maxC; c++) palette.push(hsl((c * 137.508) % 360, 0.65, 0.6));
+  const base = new Uint8Array(N * 3);
+  for (let i = 0; i < N; i++) base.set(palette[comm[i]], i * 3);
+  const colors = new Uint8Array(base);
+
+  let selected = -1;
+  const status = document.getElementById("status");
+  const describe = () => {
+    status.textContent = selected < 0
+      ? `purity ${meta.purity}, recall ${meta.recall}, layout ${meta.seconds}s`
+      : `Spotlight: community c${selected}`;
+  };
+
+  const recolor = () => {
+    if (selected < 0) { colors.set(base); return; }
+    for (let i = 0; i < N; i++) {
+      if (comm[i] === selected) colors.set(palette[selected], i * 3);
+      else { colors[i * 3] = 38; colors[i * 3 + 1] = 40; colors[i * 3 + 2] = 48; }
+    }
+  };
+
+  const layer = () => new deck.PointCloudLayer({
+    id: "sites",
+    data: { length: N, attributes: {
+      getPosition: { value: pos, size: 3 },
+      getColor: { value: colors, size: 3, normalized: true },
+    } },
+    coordinateSystem: deck.COORDINATE_SYSTEM.CARTESIAN,
+    pointSize: 1.4,
+    pickable: true,
+    onClick: ({ index }) => {
+      if (index < 0) return;
+      selected = comm[index] === selected ? -1 : comm[index];
+      recolor(); describe();
+      app.setProps({ layers: [layer()] });
+    },
+  });
+
+  const app = new deck.Deck({
+    parent: document.getElementById("app"),
+    views: new deck.OrbitView({ orbitAxis: "Y", fovy: 50 }),
+    initialViewState: { target: [0, 0, 0], rotationX: 20, rotationOrbit: 30, zoom: 1.2, minZoom: -3, maxZoom: 12 },
+    controller: true,
+    layers: [layer()],
+    getTooltip: ({ index }) => index >= 0 && {
+      text: `site-${index}\ncommunity c${comm[index]}\nlinks ${links[index]}`,
+    },
+  });
+  describe();
+})();
+</script>
+</body>
+</html>

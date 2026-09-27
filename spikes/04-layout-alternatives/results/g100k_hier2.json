@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "hier2", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 152.0, "refined_communities": 5, "layout_s": 8.93, "peak_rss_layout_mb": 286.1, "nan": 0, "edge_len_ratio": 0.2855, "knn10_purity": 0.9416, "png": "<scratch>/layout-alt-spike/results/g100k_hier2.png"}

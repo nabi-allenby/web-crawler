@@ -1,0 +1,1 @@
+{"tag": "g300k", "phase": "leidenall", "N": 300000, "E": 3676462, "load_s": 1.51, "rss_after_load_mb": 779.2, "leiden_s": 4.95, "n_iter": -1, "communities": 316, "comms_ge_100": 316, "largest": 18296, "modularity": 0.7837, "nmi_vs_planted": 0.9847, "planted_modularity": 0.7835, "peak_rss_mb": 779.2}

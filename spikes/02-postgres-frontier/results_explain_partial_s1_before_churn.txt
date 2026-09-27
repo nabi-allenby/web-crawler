@@ -1,0 +1,139 @@
+Pager usage is off.
+BEGIN
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Update on domains d (actual time=8.740..14.355 rows=32.00 loops=1)
+   Buffers: shared hit=752 read=41 dirtied=101
+   I/O Timings: shared read=1.524
+   CTE win
+     ->  Limit (actual time=0.773..4.898 rows=10000.00 loops=1)
+           Buffers: shared hit=1 read=41
+           I/O Timings: shared read=1.524
+           ->  Index Only Scan using domains_frontier on domains (actual time=0.773..4.246 rows=10000.00 loops=1)
+                 Heap Fetches: 0
+                 Index Searches: 1
+                 Buffers: shared hit=1 read=41
+                 I/O Timings: shared read=1.524
+   CTE pick
+     ->  Limit (actual time=8.189..8.193 rows=32.00 loops=1)
+           Buffers: shared hit=4 read=41
+           I/O Timings: shared read=1.524
+           ->  Sort (actual time=8.188..8.190 rows=32.00 loops=1)
+                 Sort Key: (random())
+                 Sort Method: top-N heapsort  Memory: 27kB
+                 Buffers: shared hit=4 read=41
+                 I/O Timings: shared read=1.524
+                 ->  CTE Scan on win (actual time=0.825..7.240 rows=10000.00 loops=1)
+                       Storage: Memory  Maximum Storage: 519kB
+                       Buffers: shared hit=1 read=41
+                       I/O Timings: shared read=1.524
+   CTE locked
+     ->  LockRows (actual time=8.474..10.380 rows=32.00 loops=1)
+           Buffers: shared hit=193 read=41 dirtied=29
+           I/O Timings: shared read=1.524
+           ->  Nested Loop (actual time=8.384..9.735 rows=32.00 loops=1)
+                 Buffers: shared hit=132 read=41
+                 I/O Timings: shared read=1.524
+                 ->  HashAggregate (actual time=8.227..8.240 rows=32.00 loops=1)
+                       Group Key: pick.id
+                       Batches: 1  Memory Usage: 32kB
+                       Buffers: shared hit=4 read=41
+                       I/O Timings: shared read=1.524
+                       ->  CTE Scan on pick (actual time=8.212..8.220 rows=32.00 loops=1)
+                             Storage: Memory  Maximum Storage: 18kB
+                             Buffers: shared hit=4 read=41
+                             I/O Timings: shared read=1.524
+                 ->  Index Scan using domains_pkey on domains d_1 (actual time=0.046..0.046 rows=1.00 loops=32)
+                       Index Cond: (id = pick.id)
+                       Filter: (status = 0)
+                       Index Searches: 32
+                       Buffers: shared hit=128
+   ->  Nested Loop (actual time=8.487..10.532 rows=32.00 loops=1)
+         Buffers: shared hit=321 read=41 dirtied=29
+         I/O Timings: shared read=1.524
+         ->  CTE Scan on locked (actual time=8.479..10.417 rows=32.00 loops=1)
+               Storage: Memory  Maximum Storage: 19kB
+               Buffers: shared hit=193 read=41 dirtied=29
+               I/O Timings: shared read=1.524
+         ->  Index Scan using domains_pkey on domains d (actual time=0.003..0.003 rows=1.00 loops=32)
+               Index Cond: (id = locked.id)
+               Index Searches: 32
+               Buffers: shared hit=128
+ Planning:
+   Buffers: shared hit=210 read=2 dirtied=5
+   I/O Timings: shared read=0.888
+ Planning Time: 3.630 ms
+ Execution Time: 14.778 ms
+(62 rows)
+
+ROLLBACK
+BEGIN
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Update on domains d (actual time=3.341..13.425 rows=32.00 loops=1)
+   Buffers: shared hit=647 read=3 dirtied=101
+   I/O Timings: shared read=0.966
+   CTE l
+     ->  Limit (actual time=2.063..4.673 rows=32.00 loops=1)
+           Buffers: shared hit=93 read=3 dirtied=30
+           I/O Timings: shared read=0.966
+           ->  LockRows (actual time=2.061..4.645 rows=32.00 loops=1)
+                 Buffers: shared hit=93 read=3 dirtied=30
+                 I/O Timings: shared read=0.966
+                 ->  Index Scan using domains_frontier_rk on domains (actual time=1.906..3.333 rows=32.00 loops=1)
+                       Filter: (status = 0)
+                       Index Searches: 1
+                       Buffers: shared hit=31 read=3
+                       I/O Timings: shared read=0.966
+   ->  Nested Loop (actual time=2.797..6.835 rows=32.00 loops=1)
+         Buffers: shared hit=221 read=3 dirtied=30
+         I/O Timings: shared read=0.966
+         ->  CTE Scan on l (actual time=2.071..4.745 rows=32.00 loops=1)
+               Storage: Memory  Maximum Storage: 18kB
+               Buffers: shared hit=93 read=3 dirtied=30
+               I/O Timings: shared read=0.966
+         ->  Index Scan using domains_pkey on domains d (actual time=0.063..0.063 rows=1.00 loops=32)
+               Index Cond: (id = l.id)
+               Index Searches: 32
+               Buffers: shared hit=128
+ Planning:
+   Buffers: shared hit=20
+ Planning Time: 0.324 ms
+ Execution Time: 13.501 ms
+(30 rows)
+
+ROLLBACK
+                                                QUERY PLAN                                                
+----------------------------------------------------------------------------------------------------------
+ Limit (actual time=0.031..2.326 rows=10000.00 loops=1)
+   Buffers: shared hit=101
+   ->  Index Only Scan using domains_frontier on domains (actual time=0.030..1.611 rows=10000.00 loops=1)
+         Heap Fetches: 1382
+         Index Searches: 1
+         Buffers: shared hit=101
+ Planning Time: 0.101 ms
+ Execution Time: 2.792 ms
+(8 rows)
+
+BEGIN
+                                                        QUERY PLAN                                                        
+--------------------------------------------------------------------------------------------------------------------------
+ Update on domains (actual time=0.919..9.471 rows=32.00 loops=1)
+   Buffers: shared hit=536 dirtied=73
+   InitPlan 1
+     ->  Limit (actual time=0.226..0.237 rows=32.00 loops=1)
+           Buffers: shared hit=38
+           ->  Index Only Scan using domains_frontier on domains domains_1 (actual time=0.036..0.215 rows=532.00 loops=1)
+                 Heap Fetches: 43
+                 Index Searches: 1
+                 Buffers: shared hit=38
+   ->  Index Scan using domains_pkey on domains (actual time=0.414..0.947 rows=32.00 loops=1)
+         Index Cond: (id = ANY ((InitPlan 1).col1))
+         Filter: (status = 0)
+         Index Searches: 4
+         Buffers: shared hit=57
+ Planning Time: 0.161 ms
+ Execution Time: 9.510 ms
+(16 rows)
+
+ROLLBACK

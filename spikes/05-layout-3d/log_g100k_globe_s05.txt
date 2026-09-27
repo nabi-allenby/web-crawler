@@ -1,0 +1,7 @@
+<scratch>/layout-alt-spike/.venv/lib/python3.12/site-packages/umap/umap_.py:1401: RuntimeWarning: divide by zero encountered in power
+  return 1.0 / (1.0 + a * x ** (2 * b))
+<scratch>/layout-alt-spike/.venv/lib/python3.12/site-packages/umap/umap_.py:1401: RuntimeWarning: overflow encountered in power
+  return 1.0 / (1.0 + a * x ** (2 * b))
+<scratch>/layout-alt-spike/.venv/lib/python3.12/site-packages/umap/umap_.py:1407: OptimizeWarning: Covariance of the parameters could not be estimated
+  params, covar = curve_fit(curve, xv, yv)
+{"tag": "g100k", "method": "globe_s05", "opts": {"scale": "0.05"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 266.3, "layout_s": 44.5, "log": [], "peak_rss_mb": 524.3, "purity": 0.035, "recall": 0.0}

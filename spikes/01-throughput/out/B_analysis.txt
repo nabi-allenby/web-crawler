@@ -1,0 +1,83 @@
+== Run B: concurrency=64 duration=480s resumed=True
+attempted=2725 finished=2661 completed=2105 aborted_in_flight=64 failed=556
+sites/s (completed)=4.385  visits finished/s=5.544  pages/s=19.296  http requests/s=35.367
+steady-state (t>=60s) sites/s=4.305
+visit duration completed: median=9.4s p95=51.7s mean=13.0s | failed: median=2.9s p95=10.4s
+pages-per-visit (completed): {1: 214, 2: 46, 3: 46, 4: 177, 5: 1622} mean=4.40
+homepage-only due to crawl-delay>10s: 19  crawl-delay present: 178
+per HTML page: wire median=28.6KB mean=55.8KB | decoded median=143.6KB mean=261.7KB  (n=9261)
+share of pages served compressed: 0.93
+per completed visit: wire median=135.2KB mean=248.7KB | decoded median=680.8KB mean=1164.5KB
+total body bytes (all visits): wire=536.3MB decoded=2510.5MB -> wire per completed visit incl. failures=248.8KB
+requests per finished visit: 6.38 (robots 1.85)
+external registered domains per completed visit: median=8 mean=13.4 p95=42  weight-sum mean=34.2
+new domains discovered=11971  discovery ratio=5.69 per completed visit
+discovery trend (per 60s bucket by visit end): bucket completed new ratio
+      0-60     297   1486   5.00
+     60-120    239    825   3.45
+    120-180    273    995   3.64
+    180-240    265   1970   7.43
+    240-300    234   1155   4.94
+    300-360    259   1984   7.66
+    360-420    262   1216   4.64
+    420-480    276   2340   8.48
+visit outcome breakdown (finished visits):
+   completed                  2105  79.1%
+   http4xx                     193   7.3%
+   dns                         146   5.5%
+   robots_fetch_timeout         89   3.3%
+   robots_disallow              44   1.7%
+   connect                      36   1.4%
+   http429                       9   0.3%
+   robots_fetch5xx               8   0.3%
+   other                         7   0.3%
+   crawl_delay_too_long          6   0.2%
+   timeout                       6   0.2%
+   http5xx                       4   0.2%
+   too_many_redirects            4   0.2%
+   blocked_ip                    3   0.1%
+   non_html                      1   0.0%
+internal-page failures (completed visits, pages 2..5):
+   http4xx                     129
+   robots_disallow             127
+   non_html                     15
+   http429                       7
+   too_many_redirects            7
+   timeout                       7
+   connect                       6
+   robots_fetch_timeout          4
+   http5xx                       2
+   other                         2
+   http503                       2
+   dns                           1
+   robots_fetch5xx               1
+request-level failures / statuses (all requests):
+   page:2xx                   9278
+   page:3xx                   2422
+   page:429                      6
+   page:4xx                    322
+   page:503                      2
+   page:5xx                      6
+   page:connect                  9
+   page:dns                      1
+   page:other                    7
+   page:timeout                 13
+   robots:2xx                 2653
+   robots:3xx                 1417
+   robots:429                   10
+   robots:4xx                  448
+   robots:503                    2
+   robots:5xx                    7
+   robots:blocked_ip             3
+   robots:connect              131
+   robots:dns                  146
+   robots:timeout               93
+body-cap (2MB) hits: 96
+visits stopped on 429/503: 9  visits failed with 429/503: 9
+scheme http fallback used: 66
+parse+extract CPU/page: median=3.19ms p95=11.33ms mean=4.21ms; incl. normalize/classify: median=3.42ms p95=11.93ms mean=4.48ms
+total parse CPU = 41.5s over 480s wall (8.6% of one core)
+peak RSS (/usr/bin/time -l) = 184.8MB, peak footprint=75.8MB
+process CPU: user=74.99s sys=18.19s over real=480.07s
+end state: frontier=12808 seen=16341 avg domain len=13.9B
+mem/entry: seen HashSet<String> 70.3B, frontier VecDeque<String> 44.3B, HashSet<u64> 18.0B  (heap live at end=19.8MB)

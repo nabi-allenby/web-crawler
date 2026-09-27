@@ -1,0 +1,68 @@
+== s1 full index
+Time: 58.096 ms
+Time: 7.630 ms
+Time: 3437.248 ms (00:03.437)
+Time: 2120.040 ms (00:02.120)
+ domains_pkey        | 116 MB
+ domains_name_key    | 229 MB
+ domains_status_disc | 151 MB
+Time: 13.344 ms
+{"n": 300, "p50": 4.3, "p95": 7.95, "p99": 9.61, "max": 20.23, "yield": 1.0, "db": "s1", "approach": "A", "k": 8, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 6.08, "p95": 10.94, "p99": 12.88, "max": 19.73, "yield": 1.0, "db": "s1", "approach": "A", "k": 32, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 7.49, "p95": 13.54, "p99": 22.11, "max": 27.33, "yield": 1.0, "db": "s1", "approach": "A", "k": 64, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 5.06, "p95": 7.88, "p99": 10.28, "max": 14.2, "yield": 1.0, "db": "s1", "approach": "A", "k": 8, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 6.72, "p95": 11.61, "p99": 14.92, "max": 16.55, "yield": 1.0, "db": "s1", "approach": "A", "k": 32, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 6.85, "p95": 10.15, "p99": 13.06, "max": 15.87, "yield": 1.0, "db": "s1", "approach": "A", "k": 64, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 4.61, "p95": 7.17, "p99": 9.55, "max": 10.83, "yield": 1.0, "db": "s1", "approach": "A", "k": 8, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 6.04, "p95": 8.74, "p99": 11.85, "max": 12.85, "yield": 1.0, "db": "s1", "approach": "A", "k": 32, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 6.89, "p95": 10.38, "p99": 12.82, "max": 14.42, "yield": 1.0, "db": "s1", "approach": "A", "k": 64, "load_visits_per_s": 40.0}
+                 Full-sort Groups: 313  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+                 ->  Index Scan using domains_status_disc on domains (actual time=0.054..5.461 rows=10001.00 loops=1)
+                       Index Cond: (status = 0)
+                       Index Searches: 1
+                 Sort Method: top-N heapsort  Memory: 27kB
+                 ->  Index Scan using domains_pkey on domains d_1 (actual time=0.006..0.006 rows=1.00 loops=32)
+                       Index Cond: (id = pick.id)
+                       Index Searches: 32
+         ->  Index Scan using domains_pkey on domains d (actual time=0.001..0.001 rows=1.00 loops=32)
+               Index Cond: (id = locked.id)
+               Index Searches: 32
+ Execution Time: 11.641 ms
+Time: 41.336 ms
+Time: 1455.526 ms (00:01.456)
+Time: 1644.308 ms (00:01.644)
+Time: 2216.498 ms (00:02.216)
+== s2 full index
+Time: 29.574 ms
+Time: 14.564 ms
+Time: 30358.182 ms (00:30.358)
+Time: 4179.023 ms (00:04.179)
+ domains_pkey        | 1074 MB
+ domains_name_key    | 2363 MB
+ domains_status_disc | 1504 MB
+Time: 10.492 ms
+{"n": 300, "p50": 5.54, "p95": 7.19, "p99": 9.0, "max": 9.69, "yield": 1.0, "db": "s2", "approach": "A", "k": 8, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 11.23, "p95": 14.43, "p99": 18.96, "max": 27.09, "yield": 1.0, "db": "s2", "approach": "A", "k": 32, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 18.97, "p95": 24.18, "p99": 31.76, "max": 68.95, "yield": 1.0, "db": "s2", "approach": "A", "k": 64, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 6.24, "p95": 7.81, "p99": 9.87, "max": 12.31, "yield": 1.0, "db": "s2", "approach": "A", "k": 8, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 11.82, "p95": 16.07, "p99": 17.98, "max": 25.73, "yield": 1.0, "db": "s2", "approach": "A", "k": 32, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 20.0, "p95": 25.62, "p99": 32.28, "max": 74.11, "yield": 1.0, "db": "s2", "approach": "A", "k": 64, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 6.41, "p95": 8.28, "p99": 10.21, "max": 11.8, "yield": 1.0, "db": "s2", "approach": "A", "k": 8, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 11.96, "p95": 16.47, "p99": 18.91, "max": 22.03, "yield": 1.0, "db": "s2", "approach": "A", "k": 32, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 19.75, "p95": 27.79, "p99": 36.04, "max": 737.94, "yield": 1.0, "db": "s2", "approach": "A", "k": 64, "load_visits_per_s": 40.0}
+                 Full-sort Groups: 313  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+                 ->  Index Scan using domains_status_disc on domains (actual time=0.063..6.531 rows=10001.00 loops=1)
+                       Index Cond: (status = 0)
+                       Index Searches: 1
+                 Sort Method: top-N heapsort  Memory: 27kB
+                 ->  Index Scan using domains_pkey on domains d_1 (actual time=0.010..0.010 rows=1.00 loops=32)
+                       Index Cond: (id = pick.id)
+                       Index Searches: 32
+         ->  Index Scan using domains_pkey on domains d (actual time=0.001..0.001 rows=1.00 loops=32)
+               Index Cond: (id = locked.id)
+               Index Searches: 32
+ Execution Time: 17.981 ms
+Time: 30.183 ms
+Time: 17564.904 ms (00:17.565)
+Time: 21509.873 ms (00:21.510)
+Time: 23635.544 ms (00:23.636)

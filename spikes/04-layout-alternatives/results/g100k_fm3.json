@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "fm3", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 158.2, "layout_s": 12.86, "peak_rss_layout_mb": 1681.8, "nan": 0, "edge_len_ratio": 0.4283, "knn10_purity": 0.2188, "png": "<scratch>/layout-alt-spike/results/g100k_fm3.png"}

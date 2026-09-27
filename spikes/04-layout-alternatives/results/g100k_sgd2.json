@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "sgd2", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 148.8, "layout_s": 4.37, "peak_rss_layout_mb": 884.6, "nan": 0, "edge_len_ratio": 0.8251, "knn10_purity": 0.0597, "png": "<scratch>/layout-alt-spike/results/g100k_sgd2.png"}

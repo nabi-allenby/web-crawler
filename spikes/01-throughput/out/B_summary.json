@@ -1,0 +1,23 @@
+{
+  "attempted": 2725,
+  "avg_domain_len": 13.91395875405422,
+  "completed": 2105,
+  "concurrency": 64,
+  "duration_s": 480.001541,
+  "finished": 2661,
+  "frontier_end": 12808,
+  "frontier_idle_events": 0,
+  "frontier_vecdeque_bytes_per_entry_requested": 37.997970018738286,
+  "frontier_vecdeque_bytes_per_entry_rounded16": 44.276077451592755,
+  "heap_live_bytes_end": 20776656,
+  "in_flight_aborted": 64,
+  "peak_rss_bytes_getrusage": 193740800,
+  "resumed": true,
+  "run": "B",
+  "seen_at_start": 4370,
+  "seen_end": 16341,
+  "seen_hashset_bytes_per_entry_requested": 64.0460192154703,
+  "seen_hashset_bytes_per_entry_rounded16": 70.3418395447035,
+  "seen_u64hash_bytes_per_entry": 18.048344654549904,
+  "throttled_visits": 18
+}

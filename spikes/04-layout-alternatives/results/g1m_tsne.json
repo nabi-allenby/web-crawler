@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "tsne", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 844.3, "setup_s": 5.11, "layout_s": 211.51, "peak_rss_layout_mb": 1544.8, "nan": 0, "edge_len_ratio": 0.2459, "knn10_purity": 0.9802, "png": "<scratch>/layout-alt-spike/results/g1m_tsne.png"}

@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "tsne_day2fresh", "opts": {"drop": "0.02", "seed": "1"}, "threads": 8, "N": 1000000, "E": 12138989, "rss_after_load_mb": 1229.6, "setup_s": 5.29, "layout_s": 266.37, "peak_rss_layout_mb": 1814.2, "nan": 0, "edge_len_ratio": 0.2469, "knn10_purity": 0.9802, "png": "<scratch>/layout-alt-spike/results/g1m_tsne_day2fresh.png"}

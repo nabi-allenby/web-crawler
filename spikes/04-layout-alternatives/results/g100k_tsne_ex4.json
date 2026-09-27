@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "tsne_ex4", "opts": {"exag": "4"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 156.4, "setup_s": 0.17, "layout_s": 18.67, "peak_rss_layout_mb": 405.2, "nan": 0, "edge_len_ratio": 0.2797, "knn10_purity": 0.7093, "png": "<scratch>/layout-alt-spike/results/g100k_tsne_ex4.png"}

@@ -1,0 +1,29 @@
+{"n": 300, "p50": 8.8, "p95": 14.21, "p99": 16.4, "max": 51.03, "yield": 1.0, "db": "s1", "approach": "A", "k": 8, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 15.95, "p95": 25.59, "p99": 37.44, "max": 50.73, "yield": 1.0, "db": "s1", "approach": "A", "k": 32, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 19.71, "p95": 38.5, "p99": 61.4, "max": 95.06, "yield": 1.0, "db": "s1", "approach": "A", "k": 64, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 2.3, "p95": 5.46, "p99": 7.51, "max": 16.6, "yield": 1.0, "window_refreshes": 1, "db": "s1", "approach": "C", "k": 8, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 5.01, "p95": 10.43, "p99": 13.0, "max": 30.56, "yield": 1.0, "window_refreshes": 1, "db": "s1", "approach": "C", "k": 32, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 6.32, "p95": 14.4, "p99": 20.79, "max": 37.75, "yield": 1.0, "window_refreshes": 2, "db": "s1", "approach": "C", "k": 64, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 1.97, "p95": 4.2, "p99": 5.08, "max": 7.92, "yield": 1.0, "db": "s1", "approach": "D", "k": 8, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 3.33, "p95": 7.19, "p99": 10.05, "max": 17.75, "yield": 1.0, "db": "s1", "approach": "D", "k": 32, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 4.58, "p95": 11.13, "p99": 15.31, "max": 17.69, "yield": 1.0, "db": "s1", "approach": "D", "k": 64, "load_visits_per_s": 0.0}
+{"n": 300, "p50": 4.94, "p95": 10.12, "p99": 13.91, "max": 18.07, "yield": 1.0, "db": "s1", "approach": "A", "k": 8, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 7.81, "p95": 14.75, "p99": 25.91, "max": 77.59, "yield": 1.0, "db": "s1", "approach": "A", "k": 32, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 9.54, "p95": 19.09, "p99": 29.1, "max": 56.73, "yield": 1.0, "db": "s1", "approach": "A", "k": 64, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 1.28, "p95": 3.29, "p99": 3.75, "max": 12.71, "yield": 1.0, "window_refreshes": 1, "db": "s1", "approach": "C", "k": 8, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 2.72, "p95": 6.27, "p99": 8.03, "max": 12.83, "yield": 1.0, "window_refreshes": 1, "db": "s1", "approach": "C", "k": 32, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 3.59, "p95": 8.35, "p99": 10.48, "max": 26.56, "yield": 1.0, "window_refreshes": 2, "db": "s1", "approach": "C", "k": 64, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 2.36, "p95": 4.79, "p99": 6.51, "max": 11.22, "yield": 1.0, "db": "s1", "approach": "D", "k": 8, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 3.29, "p95": 7.17, "p99": 9.3, "max": 11.45, "yield": 1.0, "db": "s1", "approach": "D", "k": 32, "load_visits_per_s": 4.0}
+{"n": 300, "p50": 4.75, "p95": 10.5, "p99": 13.21, "max": 19.24, "yield": 1.0, "db": "s1", "approach": "D", "k": 64, "load_visits_per_s": 4.0}
+{"bg_load": 4.0, "bg_insert13": {"n": 92, "p50": 3.19, "p95": 6.44, "p99": 13.02, "max": 15.68}}
+{"n": 300, "p50": 6.73, "p95": 11.27, "p99": 14.47, "max": 15.81, "yield": 1.0, "db": "s1", "approach": "A", "k": 8, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 9.8, "p95": 20.53, "p99": 29.39, "max": 64.35, "yield": 1.0, "db": "s1", "approach": "A", "k": 32, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 10.71, "p95": 19.95, "p99": 26.09, "max": 35.29, "yield": 1.0, "db": "s1", "approach": "A", "k": 64, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 1.56, "p95": 4.12, "p99": 7.34, "max": 11.07, "yield": 1.0, "window_refreshes": 1, "db": "s1", "approach": "C", "k": 8, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 2.73, "p95": 6.67, "p99": 9.75, "max": 10.4, "yield": 1.0, "window_refreshes": 1, "db": "s1", "approach": "C", "k": 32, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 3.93, "p95": 8.98, "p99": 11.07, "max": 28.79, "yield": 1.0, "window_refreshes": 2, "db": "s1", "approach": "C", "k": 64, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 3.12, "p95": 7.57, "p99": 11.93, "max": 32.72, "yield": 1.0, "db": "s1", "approach": "D", "k": 8, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 4.48, "p95": 9.32, "p99": 12.66, "max": 17.95, "yield": 1.0, "db": "s1", "approach": "D", "k": 32, "load_visits_per_s": 40.0}
+{"n": 300, "p50": 5.7, "p95": 13.0, "p99": 16.33, "max": 23.9, "yield": 1.0, "db": "s1", "approach": "D", "k": 64, "load_visits_per_s": 40.0}
+{"bg_load": 40.0, "bg_insert13": {"n": 1068, "p50": 3.32, "p95": 9.53, "p99": 15.35, "max": 54.25}}

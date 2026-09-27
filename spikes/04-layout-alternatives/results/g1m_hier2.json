@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "hier2", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1137.9, "refined_communities": 78, "layout_s": 151.05, "peak_rss_layout_mb": 1234.1, "nan": 0, "edge_len_ratio": 0.2559, "knn10_purity": 0.8613, "png": "<scratch>/layout-alt-spike/results/g1m_hier2.png"}

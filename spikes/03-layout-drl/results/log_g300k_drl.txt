@@ -1,0 +1,2 @@
+{"tag": "g300k", "phase": "drl", "N": 300000, "E": 3676462, "load_s": 2.17, "rss_after_load_mb": 732.4, "drl_s": 1608.08, "edge_len_ratio": 0.2155, "peak_rss_mb": 732.4}
+[guard] wall=1611.8s ru_maxrss=732MB polled_max=503MB exit=0 

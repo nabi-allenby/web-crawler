@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "sphere_R10", "opts": {"R": "10"}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1470.3, "layout_s": 40.1, "log": [], "peak_rss_mb": 2043.3, "purity": 0.962, "recall": 0.021}

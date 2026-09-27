@@ -1,0 +1,1 @@
+{"tag": "g1m", "method": "umap", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1135.0, "setup_s": 5.06, "layout_s": 22.93, "peak_rss_layout_mb": 2162.0, "nan": 0, "edge_len_ratio": 0.2306, "knn10_purity": 0.9641, "png": "<scratch>/layout-alt-spike/results/g1m_umap.png"}

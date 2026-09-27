@@ -1,0 +1,14 @@
+{"tag": "g1m", "method": "tsne", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 844.3, "setup_s": 5.11, "layout_s": 211.51, "peak_rss_layout_mb": 1544.8, "nan": 0, "edge_len_ratio": 0.2459, "knn10_purity": 0.9802, "png": "<scratch>/layout-alt-spike/results/g1m_tsne.png"}
+[guard] wall=216.0s ru_maxrss=1545MB polled_max=1545MB exit=0 
+{"tag": "g1m", "method": "umap", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1135.0, "setup_s": 5.06, "layout_s": 22.93, "peak_rss_layout_mb": 2162.0, "nan": 0, "edge_len_ratio": 0.2306, "knn10_purity": 0.9641, "png": "<scratch>/layout-alt-spike/results/g1m_umap.png"}
+[guard] wall=27.5s ru_maxrss=2162MB polled_max=2162MB exit=0 
+{"tag": "g1m", "method": "spectral", "opts": {}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1135.3, "layout_s": 6.51, "peak_rss_layout_mb": 1357.2, "nan": 0, "edge_len_ratio": 0.348, "knn10_purity": 0.1554, "png": "<scratch>/layout-alt-spike/results/g1m_spectral.png"}
+[guard] wall=10.1s ru_maxrss=1357MB polled_max=1354MB exit=0 
+{"tag": "g1m", "method": "eval_hier", "opts": {"src": "hier"}, "threads": 8, "N": 1000000, "E": 12386365, "rss_after_load_mb": 1134.2, "layout_s": 0.0, "peak_rss_layout_mb": 1134.2, "nan": 0, "edge_len_ratio": 0.266, "knn10_purity": 0.8374, "png": "<scratch>/layout-alt-spike/results/g1m_eval_hier.png"}
+[guard] wall=4.0s ru_maxrss=1134MB polled_max=1125MB exit=0 
+{"tag": "g100k", "method": "fa2", "opts": {"iters": "20"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 154.7, "layout_s": 62.34, "peak_rss_layout_mb": 416.4, "nan": 0, "edge_len_ratio": 0.3838, "knn10_purity": 0.3661, "png": "<scratch>/layout-alt-spike/results/g100k_fa2.png"}
+[guard] wall=63.6s ru_maxrss=416MB polled_max=409MB exit=0 
+{"tag": "g100k", "method": "maxent", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 157.6, "layout_s": 7.89, "peak_rss_layout_mb": 918.4, "nan": 0, "edge_len_ratio": 0.9387, "knn10_purity": 0.036, "png": "<scratch>/layout-alt-spike/results/g100k_maxent.png"}
+[guard] wall=10.1s ru_maxrss=918MB polled_max=832MB exit=0 
+{"tag": "g100k", "method": "tsne_ex4", "opts": {"exag": "4"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 156.4, "setup_s": 0.17, "layout_s": 18.67, "peak_rss_layout_mb": 405.2, "nan": 0, "edge_len_ratio": 0.2797, "knn10_purity": 0.7093, "png": "<scratch>/layout-alt-spike/results/g100k_tsne_ex4.png"}
+[guard] wall=20.1s ru_maxrss=440MB polled_max=405MB exit=0 

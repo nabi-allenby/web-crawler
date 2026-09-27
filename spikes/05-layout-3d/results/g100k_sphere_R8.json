@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "sphere_R8", "opts": {"R": "8"}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 271.1, "layout_s": 7.7, "log": [], "peak_rss_mb": 526.6, "purity": 0.979, "recall": 0.05}

@@ -1,0 +1,1 @@
+{"tag": "g100k", "method": "pmds", "opts": {}, "threads": 8, "N": 100000, "E": 1200743, "rss_after_load_mb": 154.5, "layout_s": 4.93, "peak_rss_layout_mb": 582.3, "nan": 0, "edge_len_ratio": 0.7253, "knn10_purity": 0.1642, "png": "<scratch>/layout-alt-spike/results/g100k_pmds.png"}

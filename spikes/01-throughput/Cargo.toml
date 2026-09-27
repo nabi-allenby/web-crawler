@@ -1,0 +1,23 @@
+[package]
+name = "explore-spike"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+shared = { path = "../../shared" }
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["native-tls", "http2", "stream"] }
+hickory-resolver = { version = "0.25", features = ["tokio", "system-config"] }
+texting_robots = "0.2"
+futures = "0.3"
+url = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+flate2 = "1"
+
+[profile.release]
+opt-level = 3
+debug = false
