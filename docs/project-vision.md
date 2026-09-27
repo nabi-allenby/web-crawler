@@ -1,5 +1,7 @@
 # Web crawler vision
-Create a free, open-source, deployable platform for Red & Blue teams that want to discover the web attack surface of their applications.
+Create a free, open-source, deployable platform that explores the web and draws a living, explorable map of it.
+
+Mapping the web attack surface of a single organization, for Red & Blue teams, is a planned mode built on the same explorer.
 
 ## About
 This file should be used as general guidelines for development. When design decisions are made, this doc should define the "spirit" of those decisions.
@@ -27,7 +29,7 @@ Keep the project as simple as possible. The more moving parts, the less scalable
 ### Open Source
 
 #### All source code is public
-The project vision is to be an open source platform for blue & red teams, anyone can contribute.
+The project vision is to be an open source platform that anyone can use and contribute to.
 
 #### All source code should be free for individuals
 This platform should always be free for individuals, and for the foreseeable future, for anyone. The code license should reflect that.
